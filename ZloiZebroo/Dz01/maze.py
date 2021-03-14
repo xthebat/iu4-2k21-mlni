@@ -286,8 +286,7 @@ class Maze:
             {
                 'Nodes': self.nodes,
                 'Adj': self.adj
-            }
-        ))
+            }, indent=4, sort_keys=True))
 
     def load_from_json(self, json_path):
         file = open(json_path, "rt")
