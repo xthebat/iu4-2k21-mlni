@@ -22,215 +22,194 @@ import json
 
 
 # получить узел, если это узел
-def get_node(x, y, data, nodes):
+def get_node(point, matrix, nodes):
 
     # Эта точка может быть узлом
-    if data[y][x] == '1':
+    if matrix.data[point.y][point.x] == '1':
 
         # is it node?
-        ways = find_possible_ways(data, (x, y))
+        ways = find_possible_ways(matrix, point)
         ways_number = len(ways)
 
         # 1 путь - тупиковый узел
         # > 2 путей - обычный узел
         if ways_number == 1 or ways_number > 2:
-            print(f'x: {x}, y: {y} is node')
+            print(f'{point.vec} is node')
+            for x in ways:
+                print(f'neighbours : {x.vec}')
 
             # Чтобы не дублировать узлы
-            if [x, y] not in nodes.values():
+            if point.vec not in nodes:
                 point_id = len(nodes)
-                nodes[point_id] = [x, y]
+                nodes[point.vec] = len(nodes)
             else:
-                point_id = list(nodes.values()).index([x, y])
-                print(f'Already exist with id: {point_id}')
-                ways = []
+                point_id = nodes[point.vec]
+                print(f'{point.vec} already exist with id: {point_id}')
+                ways = list()
             # True - это узел
-            return nodes, ways, True, Point(point_id, (x, y))
+            return nodes, Node(point_id, point, True, ways)
         # False - это не узел
-        print(f'x: {x}, y: {y} is not node')
-        return nodes, ways, False, Point(None, (x, y))
+        print(f'{point.vec} is not node ')
+        return nodes, Node(None, point, False, ways)
 
-    ways = find_possible_ways(data, (x, y))
-    return nodes, ways, False, Point(None, (x, y))
+    ways = find_possible_ways(matrix, point)
+    return nodes, Node(None, point, False, ways)
 
 
 # найти все узлы лабиринта
-def find_nodes(data):
-    nodes = dict()
+# def find_nodes(data):
+#     nodes = dict()
+#
+#     last_y = len(data) - 1
+#     last_x = len(data[0]) - 1
+#
+#     for y in range(len(data)):
+#         for x in range(len(data[0])):
+#             nodes, ways, is_node, point = get_node(x, y, data, nodes)
+#
+#     return nodes
 
-    last_y = len(data) - 1
-    last_x = len(data[0]) - 1
 
-    for y in range(len(data)):
-        for x in range(len(data[0])):
-            nodes, ways, is_node, point = get_node(x, y, data, nodes)
+def find_start_node(nodes, matrix):
 
-    return nodes
-
-
-def find_start_node(data):
-    nodes = dict()
-
-    for y in range(len(data)):
-        for x in range(len(data[0])):
-            nodes, ways, is_node, previous_point = get_node(x, y, data, nodes)
+    for r in range(len(matrix.data)):
+        for c in range(len(matrix.data[0])):
+            nodes, node = get_node(Point(c, r), matrix, nodes)
             if len(nodes) > 0:
-                print(f'Node found {nodes}')
-                return nodes, ways, previous_point
+                return nodes, node
 
     print("No nodes found")
-    return nodes, [], Point(None, None)
+    return nodes, Node(None, Point(None, None), False, list())
 
 
 # Возможные пути по которым можно пойти от точки
-def find_possible_ways(data, point):
+def find_possible_ways(matrix, point):
     possible_ways = list()
-    x, y = point
-    last_y = len(data) - 1
-    last_x = len(data[0]) - 1
 
     # check up
-    if y != last_y:
-        if data[y + 1][x] == '1':
-            possible_ways.append((x, y+1))
+    if point.y != matrix.rows - 1:
+        if matrix.data[point.y + 1][point.x] == '1':
+            possible_ways.append(Point(point.x, point.y+1))
 
     # check down
-    if y != 0:
-        if data[y - 1][x] == '1':
-            possible_ways.append((x, y-1))
+    if point.y != 0:
+        if matrix.data[point.y - 1][point.x] == '1':
+            possible_ways.append(Point(point.x, point.y-1))
 
     # check left
-    if x != 0:
-        if data[y][x - 1] == '1':
-            possible_ways.append((x-1, y))
+    if point.x != 0:
+        if matrix.data[point.y][point.x - 1] == '1':
+            possible_ways.append(Point(point.x-1, point.y))
 
     # check right
-    if x != last_x:
-        if data[y][x + 1] == '1':
-            possible_ways.append((x+1, y))
+    if point.x != matrix.columns - 1:
+        if matrix.data[point.y][point.x + 1] == '1':
+            possible_ways.append(Point(point.x+1, point.y))
 
     return possible_ways
 
 
-def add_to_dict(dc):
-    if dc.point.id not in dc.adj:
-        dc.adj[dc.point.id] = dict()
+def add_to_dict(adj, parent_node, new_node, way_len):
+    if new_node.id not in adj:
+        adj[new_node.id] = dict()
 
-    if dc.previous_point.id not in dc.adj:
-        dc.adj[dc.previous_point.id] = dict()
+    if parent_node.id not in adj:
+        adj[parent_node.id] = dict()
 
     # -1 так как считаем, что 2 соседних узла не имеют длинны
     # если между ними нет пустой клетки
-    dc.adj[dc.point.id][dc.previous_point.id] = dc.way_len - 1
-    dc.adj[dc.previous_point.id][dc.point.id] = dc.way_len - 1
+    adj[new_node.id][parent_node.id] = way_len - 1
+    adj[parent_node.id][new_node.id] = way_len - 1
 
-    return dc.adj
+    return adj
 
 
-def recursive_explorer(dc):
+def recursive_explorer(nodes_to_explore, matrix, nodes, adj):
 
-    # Загружаем новый список путей для исследования
-    dc.current_ways = dc.next_explore
-    dc.next_explore = list()
-
+    new_nodes_to_explore = list()
     # проходимся по всем узлам, которые имел пути
-    for node in dc.current_ways:
-
-        # Теперь текущий исследуемый узел становится предыдущим
-        dc.previous_point = node.parent_node
+    for node in nodes_to_explore:
 
         # Проходимся по всем путям для этих узлов
-        for way in node.ways_to_explore:
+        for point in node.neighbours:
 
-            # Сохранили
-            wte = WaysToExplore(None, dc.previous_point)
-
-            x = way[0]
-            y = way[1]
+            # cбрасываем переменные
+            way_len = 0
+            new_node = empty_node()
+            # print(f'First point to explore {point.vec}')
+            # print(f'First pprev potn {node.point.vec}')
+            point_to_explore = point
+            previous_point = node.point
             # Пока не пришли к узлу
             # is_node позволяет избавиться от шастания по словарю всех узлов
-            while not dc.is_node:
-                dc.nodes, wte.ways_to_explore, dc.is_node, dc.point = get_node(x, y, dc.data, dc.nodes)
+            while not new_node.is_simple:
+                # print(f'point to explore{point_to_explore.vec}')
+                nodes, new_node = get_node(point_to_explore, matrix, nodes)
 
+                # print('eays_to_explore')
+                # for x in new_node.ways_to_explore:
+                #     print(x.vec)
+
+                # print(f'prev point: {previous_point.vec}')
                 # Выкинем путь, ведущий назад
-                wte.ways_to_explore = [x for x in wte.ways_to_explore if x != wte.parent_node.vec]
+                new_node.neighbours = [x for x in new_node.neighbours if x.vec != previous_point.vec]
 
+                # print('eays_to_explore after clean')
+                # for x in new_node.ways_to_explore:
+                #     print(x.vec)
                 # тут сохраняем текущую точку, чтобы потом
                 # выкинуть путь ведущий назад
-                wte.parent_node = dc.point
+                new_node.parent_node = node.point
+                previous_point = new_node.point
 
                 # увеличим длинну пути
-                dc.way_len += 1
+                way_len += 1
 
                 # Если больше нет путей потыкаться, ливаем с катки
-                if len(wte.ways_to_explore) == 0:
+                if len(new_node.neighbours) == 0:
                     break
 
                 # Новые Х и У, так как это не узел, путь у него 1
-                x = wte.ways_to_explore[0][0]
-                y = wte.ways_to_explore[0][1]
+                # x = wte.ways_to_explore[0][0]
+                # y = wte.ways_to_explore[0][1]
+                # print(f'new node point: {new_node.ways_to_explore[0].vec}')
+                point_to_explore = new_node.neighbours[0]
 
             # попали в узел, осталось сохранить данные
-            print(f'Node found: {dc.point.vec}')
-            dc.adj = add_to_dict(dc)
+            adj = add_to_dict(adj, node, new_node, way_len)
 
             # сохраняем пути для будущего исследования
-            wte.parent_node = dc.point
-            dc.next_explore.append(wte)
-
-            # cбрасываем переменные
-            dc.is_node = False
-            dc.way_len = 0
+            new_nodes_to_explore.append(new_node)
 
     # Если больше некуда идти, то выходим
     # а если есть, то продолжаем
-    if len(dc.next_explore) > 0 and dc.point.id < 10:
-        recursive_explorer(dc)
+    if len(new_nodes_to_explore) > 0:
+        recursive_explorer(new_nodes_to_explore, matrix, nodes, adj)
 
-    return dc
+    return nodes, adj
 
 
-def convert_to_graph(data):
+def convert_to_graph(matrix):
+    nodes = dict()
+    adj = dict()
 
     # Находим стартовый узел от которого будет строить граф
-    nodes, ways, previous_point = find_start_node(data)
+    nodes, node = find_start_node(nodes, matrix)
 
     # снарядили экспедицию
-    wte = WaysToExplore(ways, previous_point)
-    dc = DataCase(data, nodes, wte.parent_node)
     # добавили пути для исследования
-    dc.next_explore.append(wte)
 
     # разнюхиваем дорожки, идущие от узла
-    recursive_explorer(dc)
+    nodes, adj = recursive_explorer([node], matrix, nodes, adj)
 
-    return dc.nodes, dc.adj
+    # инвертируем nodes, чтобы он представлял собой
+    # свзяь id -> vec
+    nodes = {v: list(k) for k, v in nodes.items()}
 
-
-def adjacency_matrix(nodes, adj):
-    adj_matrix = list()
-    n = len(nodes)
-    for x in range(n):
-
-        string = list()
-        for y in range(n):
-            try:
-                if str(y) in adj[str(x)]:
-                    string.append(1)
-                else:
-                    string.append(0)
-            except KeyError:
-                if y in adj[x]:
-                    string.append(1)
-                else:
-                    string.append(0)
-
-        adj_matrix.append(string)
-
-    return adj_matrix
+    return nodes, adj
 
 
-def adjacency_matrix2(nodes, adj):
+def adjacency_matrix(adj):
     size = len(adj)
     matrix = [[None] * size for _ in range(size)]
     for node, links in adj.items():
@@ -241,39 +220,46 @@ def adjacency_matrix2(nodes, adj):
     return matrix
 
 
+def empty_node():
+    return Node(None, Point(None, None), False, list())
+
+
+class Node(object):
+
+    def __init__(self, node_id, point, is_simple, ways):
+        self.point = point
+        self.id = node_id
+        self.is_simple = is_simple
+        self.parent_node = Point(None, None)
+        self.neighbours = ways
+
+
+# class Graph:
+#
+#     def __init__(self):
+#         self.nodes = None
+#         self.connections = None
+#         self.matrix = None
+
+
+class Matrix(object):
+
+    def __init__(self, data):
+        self.data = data
+        self.rows = len(data)
+        self.columns = len(data[0])
+
 
 # В таком виде представляем клетку в лабиринте
-class Point:
+class Point(object):
 
-    def __init__(self, point_id, vec):
-        self.id = point_id
-        self.vec = vec
-
-
-# Сюда собираем пути, которые потом надо будет обойти
-class WaysToExplore:
-
-    def __init__(self, ways, parent):
-        self.ways_to_explore = ways
-        self.parent_node = parent
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+        self.vec = (self.x, self.y)
 
 
-# Чтобы удобнее было таскать данные по функциям
-class DataCase:
-
-    def __init__(self, data, nodes, previous_point):
-        self.data = data
-        self.nodes = nodes
-        self.adj = dict()
-        self.current_ways = list()
-        self.next_explore = list()
-        self.point = None
-        self.previous_point = previous_point
-        self.way_len = 0
-        self.is_node = False
-
-
-class Maze(object):
+class Graph(object):
 
     def __init__(self):
         self.matrix = None
@@ -283,17 +269,15 @@ class Maze(object):
 
     def load_from_txt(self, txt_path):
         with open(txt_path, "rt") as file:
-            self.matrix = [[it.strip() for it in it.strip()] for it in file.readlines()]
+            self.matrix = Matrix([[it.strip() for it in it.strip()] for it in file.readlines()])
 
         # Если в лабиринте могут быть отрезанные пути за стенами
         # self.nodes = find_nodes(self.matrix)
         self.nodes, self.adj = convert_to_graph(self.matrix)
-        self.adj_matrix = adjacency_matrix2(self.nodes, self.adj)
+        self.adj_matrix = adjacency_matrix(self.adj)
 
     def to_json(self, path):
         with open(path, 'wt') as f:
-            # print(f'Nodes: {self.nodes}')
-            # print(f'Connections: {self.adj}')
             f.write(json.dumps(
                 {
                     'Nodes': self.nodes,
@@ -305,7 +289,7 @@ class Maze(object):
             data = json.load(file)
             self.nodes = data['Nodes']
             self.adj = data['Adj']
-            self.adj_matrix = adjacency_matrix2(self.nodes, self.adj)
+            self.adj_matrix = adjacency_matrix(self.adj)
 
 
 def main():
@@ -317,23 +301,22 @@ def main():
     maze_json = 'maze_graph.json'
 
     # Читаем лабиринт из тхт файла
-    maze = Maze()
-    maze.load_from_txt(maze_2)
+    graph = Graph()
+    graph.load_from_txt(maze_2)
 
-    print(f'Maze matrix: {maze.matrix}')
-    print(f'Maze nodes: {maze.nodes}')
-    print(f'Maze adj: {maze.adj}')
+    print(f'Maze nodes: {graph.nodes}')
+    print(f'Maze adj: {graph.adj}')
 
     # Сохраняем граф в json
-    maze.to_json(maze_json)
+    graph.to_json(maze_json)
 
     # Загружаем граф из json
-    maze2 = Maze()
-    maze2.load_from_json(maze_json)
+    graph2 = Graph()
+    graph2.load_from_json(maze_json)
 
     # печатаем матрицу смежности
-    for x in maze2.adj_matrix:
-        print(x)
+    for r in graph2.adj_matrix:
+        print(r)
 
     return 0
 
