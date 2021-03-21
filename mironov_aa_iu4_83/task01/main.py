@@ -1,9 +1,11 @@
 #!/home/andrey/MLNI/iu4-2k21-mlni/mironov_aa_iu4_83/env/bin/python
-
+import sys
+import unittest
 from typing import Union
 
 from constants import *
 from csv_utils import make_csv_matrix, get_matrix
+from dkstr import find_path
 from neighbours import find_paths, path_from_node
 from utils import start_or_end_position, check_node, pointer_in_maze_scope, Nodes, Matrix, Paths, \
     Adj_dict, next_node_id, print_results, get_corrections
@@ -55,8 +57,8 @@ def scan_maze(maze: Matrix, adj_dict: Adj_dict, paths: Paths, nodes: Nodes):
                 continue
 
 
-def main():
-    maze: Matrix = get_matrix(filename='6x5.csv')
+def main(path_to_file):
+    maze: Matrix = get_matrix(filename=path_to_file)
 
     adj_dict: Adj_dict = {}
     paths: Paths = {}
@@ -70,8 +72,10 @@ def main():
 
 
 if __name__ == '__main__':
+    path = sys.argv[1]
     import time
     start = time.time()
-    main()
+    main(path)
     end = time.time()
     print(f'Time: {(end - start) * 1000} ms')
+    print(find_path())
