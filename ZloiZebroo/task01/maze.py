@@ -1,6 +1,6 @@
 import json
 import itertools
-from typing import Iterator
+from typing import Iterator, List
 import math
 import copy
 
@@ -25,106 +25,6 @@ import copy
 # }
 
 
-# получить узел, если это узел
-def get_node(point, matrix, nodes):
-
-    # Эта точка может быть узлом
-    if matrix.data[point.y][point.x] == '1':
-
-        # is it node?
-        ways = find_possible_ways(matrix, point)
-        ways_number = len(ways)
-
-        # 1 путь - тупиковый узел
-        # > 2 путей - обычный узел
-        if ways_number == 1 or ways_number > 2:
-            print(f'{point.vec} is node')
-            for x in ways:
-                print(f'neighbours : {x.vec}')
-
-            # Чтобы не дублировать узлы
-            if point.vec not in nodes:
-                point_id = len(nodes)
-                nodes[point.vec] = len(nodes)
-            else:
-                point_id = nodes[point.vec]
-                print(f'{point.vec} already exist with id: {point_id}')
-                ways = list()
-            # True - это узел
-            return nodes, Node(point_id, point, True, ways)
-        # False - это не узел
-        print(f'{point.vec} is not node ')
-        return nodes, Node(None, point, False, ways)
-
-    ways = find_possible_ways(matrix, point)
-    return nodes, Node(None, point, False, ways)
-
-
-# получить узел, если это узел
-def get_wall(point, matrix, walls):
-
-    # Эта точка может быть стеной, которую мы сломаем
-    if matrix.data[point.y][point.x] == '0':
-
-        # будем ли ломать?
-        ways = find_possible_ways(matrix, point)
-        ways_number = len(ways)
-
-        # > 1 путя - можем ломать!
-        if ways_number > 1:
-            print(f'{point.vec} wall to brake')
-            for x in ways:
-                print(f'neighbour way: {x.vec}')
-
-            # Чтобы не дублировать узлы
-            if point.vec not in walls:
-                point_id = len(walls)
-                walls[point.vec] = Wall(point, ways)
-            else:
-                point_id = walls[point.vec]
-                print(f'{point.vec} already exist with id: {point_id}')
-            return walls
-        return walls
-    return walls
-
-
-def find_start_node(nodes, matrix):
-    for r, c in rangend(len(matrix.data), len(matrix.data[0])):
-        nodes, node = get_node(Point(c, r), matrix, nodes)
-        if len(nodes) > 0:
-            return nodes, node
-
-    print("No nodes found")
-    return nodes, Node(None, Point(None, None), False, list())
-
-
-# Возможные пути по которым можно пойти от точки
-def find_possible_ways(matrix, point):
-    possible_ways = list()
-
-    # check up
-    if point.y != matrix.rows - 1:
-        if ray_cast((0, 1), point, matrix):
-            possible_ways.append(Point(point.x, point.y+1))
-
-    # check down
-    if point.y != 0:
-        if ray_cast((0, -1), point, matrix):
-            possible_ways.append(Point(point.x, point.y-1))
-
-    # check left
-    if point.x != 0:
-        if ray_cast((-1, 0), point, matrix):
-            possible_ways.append(Point(point.x-1, point.y))
-
-    # check right
-    if point.x != matrix.columns - 1:
-        if ray_cast((1, 0), point, matrix):
-            possible_ways.append(Point(point.x+1, point.y))
-
-    return possible_ways
-
-
 def add_to_dict(adj, parent_node, new_node, way_len):
 
     if new_node.id not in adj:
@@ -139,62 +39,12 @@ def add_to_dict(adj, parent_node, new_node, way_len):
     return adj
 
 
-def recursive_explorer(nodes_to_explore, matrix, nodes, adj):
-
-    new_nodes_to_explore = list()
-    # проходимся по всем узлам, которые имел пути
-    for node in nodes_to_explore:
-
-        # Проходимся по всем путям для этих узлов
-        for point in node.neighbours:
-
-            # сбрасываем переменные
-            way_len = 0
-            new_node = empty_node()
-            point_to_explore = point
-            previous_point = node.point
-            # Пока не пришли к узлу
-            # is_node позволяет избавиться от шастания по словарю всех узлов
-            while not new_node.is_simple:
-                nodes, new_node = get_node(point_to_explore, matrix, nodes)
-
-                # Выкинем путь, ведущий назад
-                new_node.neighbours = [x for x in new_node.neighbours if x.vec != previous_point.vec]
-
-                # тут сохраняем текущую точку, чтобы потом
-                # выкинуть путь ведущий назад
-                new_node.parent_node = node.point
-                previous_point = new_node.point
-
-                # увеличим длинну пути
-                way_len += 1
-
-                # Если больше нет путей потыкаться, ливаем с катки
-                if len(new_node.neighbours) == 0:
-                    break
-
-                point_to_explore = new_node.neighbours[0]
-
-            # попали в узел, осталось сохранить данные
-            adj = add_to_dict(adj, node, new_node, way_len)
-
-            # сохраняем пути для будущего исследования
-            new_nodes_to_explore.append(new_node)
-
-    # Если больше некуда идти, то выходим
-    # а если есть, то продолжаем
-    if len(new_nodes_to_explore) > 0:
-        recursive_explorer(new_nodes_to_explore, matrix, nodes, adj)
-
-    return nodes, adj
-
-
 def convert_to_graph(matrix):
     nodes = dict()
     adj = dict()
 
     # Находим стартовый узел от которого будет строить граф
-    nodes, node = find_start_node(nodes, matrix)
+    node = find_start_node(matrix)
 
     # снарядили экспедицию
     # добавили пути для исследования
@@ -236,16 +86,6 @@ def load_from_json(path):
         graph.adj = data['Adj']
         graph.adj_matrix = adjacency_matrix(graph.adj)
         return graph
-
-
-def load_from_txt(path):
-    graph = Graph()
-    with open(path, "rt") as file:
-        graph.matrix = Matrix([[it.strip() for it in it.strip()] for it in file.readlines()])
-
-    graph.nodes, graph.adj, graph.walls_to_brake = convert_to_graph(graph.matrix)
-    graph.adj_matrix = adjacency_matrix(graph.adj)
-    return graph
 
 
 def to_json(graph, path):
@@ -311,22 +151,6 @@ def dijkstra(end, start, adj_matrix, adj):
     print(f'Route len: {route_len}')
 
     return optimal_route, route_len
-
-
-# Возращает тру, если на коориданте находится 1
-def ray_cast(inc, point, matrix):
-    if matrix.data[point.y + inc[1]][point.x + inc[0]] == '1':
-        return True
-    else:
-        return False
-
-
-# найти все разрушаемые стенки лабиринта
-def find_walls(matrix):
-    walls = dict()
-    for r, c in rangend(len(matrix.data), len(matrix.data[0])):
-        walls = get_wall(Point(c, r), matrix, walls)
-    return walls
 
 
 def shortest_way(start, end, graph, brake_wall):
@@ -409,21 +233,20 @@ class Node(object):
         self.neighbours = ways
 
 
-class Matrix(object):
-
-    def __init__(self, data):
-        self.data = data
-        self.rows = len(data)
-        self.columns = len(data[0])
-
-
 # В таком виде представляем клетку в лабиринте
 class Point(object):
 
     def __init__(self, x, y):
         self.x = x
         self.y = y
-        self.vec = (self.x, self.y)
+
+    def __eq__(self, other):
+        if self is other:
+            return True
+        return self.x == other.x and self.y == other.y
+
+    def __hash__(self):
+        return hash(self.x) ^ hash(self.y)
 
     def __repr__(self):
         return str(self)
@@ -432,14 +255,212 @@ class Point(object):
         return f'(x:{self.x}, y:{self.y})'
 
 
+class Matrix(object):
+
+    @staticmethod
+    def from_file(path):
+        with open(path, "rt") as file:
+            return Matrix([[it.strip() for it in it.strip()] for it in file.readlines()])
+
+    def __init__(self, data: List[List]):
+        self.__data = data
+        self.rows = len(data)
+        self.columns = len(data[0])
+
+    def __getitem__(self, item):
+        return self.__data[item[0]][item[1]]
+
+
+class Maze(object):
+
+    def __init__(self, matrix: Matrix):
+        self.matrix = matrix
+        self.nodes = dict()
+        self.walls = dict()
+
+    @property
+    def rows(self):
+        return self.matrix.rows
+
+    @property
+    def columns(self):
+        return self.matrix.columns
+
+    def find_start_node(self):
+        for r, c in rangend(self.rows, self.columns):
+            node = self.get_node(Point(c, r))
+            if len(self.nodes) > 0:
+                return node
+
+        raise RuntimeError("No starting nodes found")
+
+    # найти все разрушаемые стенки лабиринта
+    def find_walls(self):
+        for r, c in rangend(self.rows, self.columns):
+            self.get_wall(Point(c, r))
+        return self.walls
+
+    def get_node(self, point):
+        """получить узел, если это узел"""
+
+        if self.matrix[point.y, point.x] != '1':
+            ways = self.point_neighbours(point)
+            return Node(None, point, False, ways)
+
+        # is it node?
+        ways = self.point_neighbours(point)
+        ways_number = len(ways)
+
+        # 1 путь - тупиковый узел
+        # > 2 путей - обычный узел
+        if ways_number == 1 or ways_number > 2:
+            print(f'{point} is node')
+            for it in ways:
+                print(f'neighbours : {it}')
+
+            # Чтобы не дублировать узлы
+            if point not in self.nodes:
+                point_id = len(self.nodes)
+                self.nodes[point] = len(self.nodes)
+            else:
+                point_id = self.nodes[point]
+                print(f'{point} already exist with id: {point_id}')
+                ways = list()
+            # True - это узел
+            return Node(point_id, point, True, ways)
+        # False - это не узел
+        print(f'{point} is not node ')
+        return Node(None, point, False, ways)
+
+    def get_wall(self, point):
+        """получить узел, если это узел"""
+
+        # Эта точка может быть стеной, которую мы сломаем
+        if self.matrix[point.y, point.x] == '0':
+
+            # будем ли ломать?
+            ways = self.point_neighbours(point)
+            ways_number = len(ways)
+
+            # > 1 путя - можем ломать!
+            if ways_number > 1:
+                print(f'{point} wall to brake')
+                for way in ways:
+                    print(f'neighbour way: {way}')
+
+                # Чтобы не дублировать узлы
+                if point not in self.walls:
+                    point_id = len(self.walls)
+                    self.walls[point] = Wall(point, ways)
+                else:
+                    point_id = self.walls[point]
+                    print(f'{point.vec} already exist with id: {point_id}')
+                return self.walls
+            return self.walls
+        return self.walls
+
+    # Возможные пути по которым можно пойти от точки
+    def point_neighbours(self, point):
+        possible_ways = list()
+
+        # check up
+        if point.y != self.matrix.rows - 1:
+            if self.ray_cast((0, 1), point):
+                possible_ways.append(Point(point.x, point.y + 1))
+
+        # check down
+        if point.y != 0:
+            if self.ray_cast((0, -1), point):
+                possible_ways.append(Point(point.x, point.y - 1))
+
+        # check left
+        if point.x != 0:
+            if self.ray_cast((-1, 0), point):
+                possible_ways.append(Point(point.x - 1, point.y))
+
+        # check right
+        if point.x != self.columns - 1:
+            if self.ray_cast((1, 0), point):
+                possible_ways.append(Point(point.x + 1, point.y))
+
+        return possible_ways
+
+    def ray_cast(self, inc, point):
+        """Возращает тру, если на коориданте находится 1"""
+        return self.matrix[point.y + inc[1], point.x + inc[0]] == '1'
+
+    def recursive_explorer(self, nodes_to_explore, nodes=None, adj=None):
+        adj = adj or dict()
+        nodes = nodes or list()
+
+        new_nodes_to_explore = list()
+        # проходимся по всем узлам, которые имел пути
+        for node in nodes_to_explore:
+
+            # Проходимся по всем путям для этих узлов
+            for point in node.point_neighbours:
+
+                # сбрасываем переменные
+                way_len = 0
+                new_node = empty_node()
+                point_to_explore = point
+                previous_point = node.point
+                # Пока не пришли к узлу
+                # is_node позволяет избавиться от шастания по словарю всех узлов
+                while not new_node.is_simple:
+                    new_node = self.get_node(point_to_explore)
+
+                    # Выкинем путь, ведущий назад
+                    new_node.point_neighbours = [x for x in new_node.point_neighbours if x.vec != previous_point.vec]
+
+                    # тут сохраняем текущую точку, чтобы потом
+                    # выкинуть путь ведущий назад
+                    new_node.parent_node = node.point
+                    previous_point = new_node.point
+
+                    # увеличим длинну пути
+                    way_len += 1
+
+                    # Если больше нет путей потыкаться, ливаем с катки
+                    if len(new_node.point_neighbours) == 0:
+                        break
+
+                    point_to_explore = new_node.point_neighbours[0]
+
+                # попали в узел, осталось сохранить данные
+                adj = add_to_dict(adj, node, new_node, way_len)
+
+                # сохраняем пути для будущего исследования
+                new_nodes_to_explore.append(new_node)
+
+        # Если больше некуда идти, то выходим
+        # а если есть, то продолжаем
+        if len(new_nodes_to_explore) > 0:
+            self.recursive_explorer(new_nodes_to_explore, nodes, adj)
+
+        return nodes, adj
+
+
 class Graph(object):
 
-    def __init__(self):
+    @staticmethod
+    def from_matrix(matrix):
+        maze = Maze(matrix)
+        node = maze.find_start_node()
+        recursive_explorer([node], matrix, maze.nodes, adj)
+        wall_to_brake = maze.find_walls()
+        return Graph(nodes, adj, wall_to_brake)
+
+    @staticmethod
+    def from_file(path):
+        return Graph.from_matrix(Matrix.from_file(path))
+
+    def __init__(self, nodes, adj, wall_to_brake):
         self.matrix = None
-        self.nodes = None
-        self.adj = None
-        self.adj_matrix = None
-        self.walls_to_brake = None
+        self.nodes = nodes
+        self.adj = adj
+        self.adj_matrix = adjacency_matrix(adj)
+        self.walls_to_brake = wall_to_brake
 
 
 def main():
@@ -453,7 +474,7 @@ def main():
     maze_json = 'maze_graph.json'
 
     # Читаем лабиринт из тхт файла
-    graph = load_from_txt(maze_7)
+    graph = Graph.from_file(maze_7)
 
     print(f'Maze nodes: {graph.nodes}')
     print(f'Maze adj: {graph.adj}')

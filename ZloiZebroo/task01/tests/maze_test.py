@@ -1,11 +1,12 @@
 import unittest
 from task01 import maze as graph
+from task01.maze import Graph
 
 
 class MazeTests(unittest.TestCase):
 
     def test_graph_02(self):
-        data = graph.load_from_txt('../maze_02.txt')
+        data = Graph.from_file('../maze_02.txt')
         actual = [data.nodes, data.adj, data.adj_matrix, data.matrix.data]
         expected = [
             {0: [0, 0], 1: [1, 2], 2: [9, 4], 3: [9, 2], 4: [9, 5], 5: [9, 0]},
@@ -42,7 +43,7 @@ class MazeTests(unittest.TestCase):
         self.assertEqual(expected, actual)
 
     def test_graph_2x2(self):
-        data = graph.load_from_txt('../maze_04.txt')
+        data = Graph.from_file('../maze_04.txt')
         actual = [data.nodes, data.adj, data.adj_matrix]
         expected = [
             {},
@@ -52,7 +53,7 @@ class MazeTests(unittest.TestCase):
         self.assertEqual(expected, actual)
 
     def test_graph_3x3(self):
-        data = graph.load_from_txt('../maze_03.txt')
+        data = Graph.from_file('../maze_03.txt')
         actual = [data.nodes, data.adj, data.adj_matrix]
         expected = [
             {0: [1, 0], 1: [1, 1], 2: [0, 1], 3: [2, 1], 4: [1, 2]},
@@ -70,13 +71,13 @@ class MazeTests(unittest.TestCase):
         self.assertEqual(expected, actual)
 
     def test_find_start(self):
-        data = graph.load_from_txt('../maze_03.txt')
+        data = Graph.from_file('../maze_03.txt')
         ans1, ans2 = graph.find_start_node(dict(), data.matrix)
         actual = [
             ans1,
             ans2.parent_node.vec,
             ans2.point.vec,
-            len(ans2.neighbours),
+            len(ans2.point_neighbours),
             ans2.id,
             ans2.is_simple
         ]
