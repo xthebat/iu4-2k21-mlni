@@ -1,6 +1,5 @@
 #!/home/andrey/MLNI/iu4-2k21-mlni/mironov_aa_iu4_83/env/bin/python
 import sys
-import unittest
 from typing import Union
 
 from constants import *
@@ -53,7 +52,7 @@ def scan_maze(maze: Matrix, adj_dict: Adj_dict, paths: Paths, nodes: Nodes):
                 continue
 
             if cell == PATH:
-                path_from_node(nodes, maze, paths, x, y)
+                path_from_node(adj_dict, nodes, maze, paths, x, y)
                 continue
 
 
@@ -78,4 +77,5 @@ if __name__ == '__main__':
     main(path)
     end = time.time()
     print(f'Time: {(end - start) * 1000} ms')
-    print(find_path())
+    p, l = find_path()
+    print(f'Minimal path: {p}, Length: {l}')

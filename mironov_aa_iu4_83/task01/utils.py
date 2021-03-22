@@ -37,7 +37,7 @@ def start_or_end_position(x: int, y: int, row_len: int, col_len: int) -> bool:
     return (x, y) == (0, 0) or (x, y) == (row_len - 1, col_len - 1)
 
 
-def get_path_length(paths: Paths, start_node) -> int:
+def get_path_length(paths: Paths, start_node: str) -> int:
     return len([k for k, v in paths.items() if v == start_node]) + 1
 
 
@@ -64,12 +64,20 @@ def node_id(paths: Paths, x: int, y: int) -> int:
     return int(paths[(x, y)][0])
 
 
+def node_side(paths: Paths, x: int, y: int) -> str:
+    return paths[(x, y)].split('_')[1]
+
+
 def cell_is_node(nodes: Nodes, x: int, y: int):
     return (x, y) in nodes.keys()
 
 
 def cell_is_path(paths: Paths, x: int, y: int):
     return (x, y) in paths.keys()
+
+
+def cell_have_node_side(paths: Paths, x: int, y: int):
+    return cell_is_path(paths, x, y) and isinstance(paths[(x, y)], str)
 
 
 def print_results(nodes: Nodes, paths: Paths, adj_dict: Adj_dict):

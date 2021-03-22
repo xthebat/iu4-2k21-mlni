@@ -17,7 +17,7 @@ def get_min_path(paths, current_node) -> Path:
     return min_path[0][0] if min_path else ()
 
 
-def find_path():
+def find_path() -> (Path, int):
     adj_matrix = get_matrix(filename='adj.csv')
 
     paths = {}

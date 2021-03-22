@@ -1,6 +1,7 @@
 from constants import SIDES
 from utils import Adj_dict, Paths, Nodes, Matrix, pointer_in_maze_scope, cell_is_node, \
-    cell_is_path, node_id_is_hash, node_id, get_path_length, get_corrections, make_node_side_from_hash
+    cell_is_path, node_id_is_hash, node_id, get_path_length, get_corrections, make_node_side_from_hash, node_side, \
+    cell_have_node_side
 
 
 def find_paths(adj_dict: Adj_dict, paths: Paths, nodes: Nodes, matrix: Matrix, x: int, y: int) -> None:
@@ -40,7 +41,7 @@ def find_paths(adj_dict: Adj_dict, paths: Paths, nodes: Nodes, matrix: Matrix, x
                         })
 
 
-def path_from_node(nodes: Nodes, matrix: Matrix, paths: Paths, x: int, y: int) -> None:
+def path_from_node(adj_dict: Adj_dict, nodes: Nodes, matrix: Matrix, paths: Paths, x: int, y: int) -> None:
     """ Check neighbours of path cell to find node membership """
     for side in SIDES:
         corr_x, corr_y = get_corrections(side)
@@ -49,6 +50,22 @@ def path_from_node(nodes: Nodes, matrix: Matrix, paths: Paths, x: int, y: int) -
             if cell_is_node(nodes, x + corr_x, y + corr_y):                 # Neighbour is node
                 paths.update({(x, y): f'{nodes[(x + corr_x, y + corr_y)]}_{side}'})
             elif cell_is_path(paths, x + corr_x, y + corr_y):               # Neighbour is path
-                paths.update({(x, y): paths[(x + corr_x, y + corr_y)]})
+                if cell_have_node_side(paths, x, y) and node_id_is_hash(paths, x + corr_x, y + corr_y):
+                    make_node_side_from_hash(
+                        node_side(paths, x, y),
+                        node_id(paths, x, y),
+                        paths,
+                        paths[(x + corr_x, y + corr_y)]
+                    )
+                    continue
+                elif cell_have_node_side(paths, x, y) and not node_id_is_hash(paths, x + corr_x, y + corr_y):
+                    from_node_id = node_id(paths, x, y)
+                    to_node_id = node_id(paths, x + corr_x, y + corr_y)
+
+                    adj_dict[(
+                        from_node_id, to_node_id
+                    )] = get_path_length(paths, paths[(x, y)]) + get_path_length(paths, paths[(x + corr_x, y + corr_y)]) - 1
+                else:
+                    paths.update({(x, y): paths[(x + corr_x, y + corr_y)]})
             elif (x, y) not in paths.keys():                                # Current cell is not path
                 paths.update({(x, y): hash((x, y))})
