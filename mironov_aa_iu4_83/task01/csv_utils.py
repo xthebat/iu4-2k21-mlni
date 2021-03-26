@@ -1,6 +1,6 @@
 import csv
 
-from utils import Adj_dict, Matrix
+from utils import Adjacency, Matrix
 
 
 def get_matrix(filename: str) -> Matrix:
@@ -10,7 +10,7 @@ def get_matrix(filename: str) -> Matrix:
     return [list(map(lambda x: int(x), str_matrix[i])) for i in range(len(str_matrix))]
 
 
-def create_matrix_from_dict(adj: Adj_dict, nodes_num: int) -> Matrix:
+def create_matrix_from_dict(adj: Adjacency, nodes_num: int) -> Matrix:
     real_matrix = [[0] * nodes_num for _ in range(nodes_num)]
     for x, y in adj.keys():
         real_matrix[x][y] = adj[(x, y)]
@@ -18,7 +18,7 @@ def create_matrix_from_dict(adj: Adj_dict, nodes_num: int) -> Matrix:
     return real_matrix
 
 
-def make_csv_matrix(adj: Adj_dict, nodes_num: int) -> None:
+def make_csv_matrix(adj: Adjacency, nodes_num: int) -> None:
     real_matrix = create_matrix_from_dict(adj, nodes_num)
     with open('adj.csv', 'w') as file:
         writer = csv.writer(file)

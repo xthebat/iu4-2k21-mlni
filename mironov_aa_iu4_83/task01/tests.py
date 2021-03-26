@@ -9,15 +9,19 @@ from main import scan_maze
 class MazeTest(unittest.TestCase):
 
     def test_adjacency_matrix(self):
-        expected = {(0, 1): 1, (1, 2): 2, (1, 3): 2, (3, 2): 4, (3, 4): 8, (2, 4): 6}
+        # expected = {(0, 1): 1, (1, 2): 2, (1, 3): 2, (3, 2): 4, (3, 4): 8, (2, 4): 6}
+        # after review: results are the same just differ order
+        expected = {(0, 1): 1, (1, 2): 2, (1, 3): 2, (2, 3): 4, (2, 4): 6, (3, 4): 8}
 
         maze = get_matrix(filename='6x5.csv')
 
-        adj_dict = {}
-        paths = {}
-        nodes = {}
+        adj_dict = dict()
+        paths = dict()
+        nodes = dict()
 
         scan_maze(maze, adj_dict, paths, nodes)
+
+        print(nodes)
 
         self.assertEqual(expected, adj_dict)
 

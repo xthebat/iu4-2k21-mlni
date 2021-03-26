@@ -1,71 +1,63 @@
 from constants import SIDES
-from utils import Adj_dict, Paths, Nodes, Matrix, pointer_in_maze_scope, cell_is_node, \
-    cell_is_path, node_id_is_hash, node_id, get_path_length, get_corrections, make_node_side_from_hash, node_side, \
-    cell_have_node_side
+from utils import Adjacency, Paths, Nodes, Matrix, maze_contains, path_is_point_hash, path_get_node_id, \
+    path_get_length, node_side_from_hash, path_get_point_side, path_has_point_side, maze_is_point_wall, \
+    Point, point_add, point_sub, node_side_from_point
 
 
-def find_paths(adj_dict: Adj_dict, paths: Paths, nodes: Nodes, matrix: Matrix, x: int, y: int) -> None:
+def find_paths(adj_dict: Adjacency, paths: Paths, nodes: Nodes, matrix: Matrix, point: Point) -> None:
     """ Check neighbours of node cell to find paths to other nodes """
     for side in SIDES:
-        corr_x, corr_y = get_corrections(side, invert=True)
+        # DO NOT NEVER EVER USE NOTATION x, y FOR MATRIX, ALWAYS USE i, j OR BETTER r, c (row, col)
+        # Because you in some place have (x, y) in others (y, x) it is f****ing crazy
+        other = point_sub(point, side)
 
-        if pointer_in_maze_scope(x + corr_x, y + corr_y, matrix) and matrix[y + corr_y][x + corr_x]:
-            if cell_is_node(nodes, x + corr_x, y + corr_y):         # Neighbour is node -> path length = 1
-                adj_dict.update({
-                    (nodes[(x + corr_x, y + corr_y)], nodes[(x, y)]): 1
-                })
-            if cell_is_path(paths, x + corr_x, y + corr_y):         # Neighbor is path
-                if node_id_is_hash(paths, x + corr_x, y + corr_y):  # Neighbor is not a path to the node
-                    make_node_side_from_hash(side, nodes[(x, y)], paths, paths[(x + corr_x, y + corr_y)])
-                    if node_id(paths, x + corr_x, y + corr_y) == nodes[(x, y)]:
-                        continue
-                if (node_id(paths, x + corr_x, y + corr_y), nodes[(x, y)]) not in adj_dict.keys():
-                    # The neighboring cell is exactly the path to the node
-                    adj_dict.update({
-                        (
-                            node_id(paths, x + corr_x, y + corr_y),
-                            nodes[(x, y)]
-                        ): get_path_length(paths, paths[(x + corr_x, y + corr_y)])
-                    })
-                else:
-                    if adj_dict[(
-                            node_id(paths, x + corr_x, y + corr_y),
-                            nodes[(x, y)]
-                    )] > get_path_length(paths, paths[(x + corr_x, y + corr_y)]):
-                        # There are two paths to one node -> choose the shortest path
-                        adj_dict.update({
-                            (
-                                node_id(paths, x + corr_x, y + corr_y),
-                                nodes[(x, y)]
-                            ): get_path_length(paths, paths[(x + corr_x, y + corr_y)])
-                        })
+        if not maze_contains(matrix, other) or maze_is_point_wall(matrix, other):
+            continue
+
+        if other in nodes:
+            # Neighbour is node -> path length = 1
+            adj_dict[(nodes[other], nodes[point])] = 1
+
+        if other in paths:
+            if path_is_point_hash(paths, other):  # Neighbor is not a path to the node
+                node_side_from_hash(side, nodes[point], paths, paths[other])
+                if path_get_node_id(paths, other) == nodes[point]:
+                    continue
+
+            path_node = path_get_node_id(paths, other)
+            link = (path_node, nodes[point])
+            length = path_get_length(paths, paths[other])
+            if link not in adj_dict:
+                # The neighboring cell is exactly the path to the node
+                adj_dict[link] = length
+
+            elif adj_dict[link] > length:
+                # There are two paths to one node -> choose the shortest path
+                adj_dict[link] = length
 
 
-def path_from_node(adj_dict: Adj_dict, nodes: Nodes, matrix: Matrix, paths: Paths, x: int, y: int) -> None:
+def path_from_node(adj_dict: Adjacency, nodes: Nodes, matrix: Matrix, paths: Paths, point: Point) -> None:
     """ Check neighbours of path cell to find node membership """
     for side in SIDES:
-        corr_x, corr_y = get_corrections(side)
+        other = point_add(point, side)
 
-        if pointer_in_maze_scope(x + corr_x, y + corr_y, matrix) and matrix[y + corr_y][x + corr_x]:
-            if cell_is_node(nodes, x + corr_x, y + corr_y):                 # Neighbour is node
-                paths.update({(x, y): f'{nodes[(x + corr_x, y + corr_y)]}_{side}'})
-            elif cell_is_path(paths, x + corr_x, y + corr_y):               # Neighbour is path
-                if cell_have_node_side(paths, x, y) and node_id_is_hash(paths, x + corr_x, y + corr_y):
-                    make_node_side_from_hash(
-                        node_side(paths, x, y),
-                        node_id(paths, x, y),
-                        paths,
-                        paths[(x + corr_x, y + corr_y)]
-                    )
-                    continue
-                elif cell_have_node_side(paths, x, y) and not node_id_is_hash(paths, x + corr_x, y + corr_y):
-                    from_node_id = node_id(paths, x, y)
-                    to_node_id = node_id(paths, x + corr_x, y + corr_y)
+        if not maze_contains(matrix, point) or maze_is_point_wall(matrix, point):
+            continue
 
-                    adj_dict[(
-                        from_node_id, to_node_id
-                    )] = get_path_length(paths, paths[(x, y)]) + get_path_length(paths, paths[(x + corr_x, y + corr_y)]) - 1
-                else:
-                    paths.update({(x, y): paths[(x + corr_x, y + corr_y)]})
-            elif (x, y) not in paths.keys():                                # Current cell is not path
-                paths.update({(x, y): hash((x, y))})
+        if other in nodes:  # Neighbour is node
+            paths[point] = node_side_from_point(nodes, other, side)
+
+        elif other in paths:  # Neighbour is path
+            if path_has_point_side(paths, point) and path_is_point_hash(paths, other):
+                side = path_get_point_side(paths, point)
+                ident = path_get_node_id(paths, point)
+                node_side_from_hash(side, ident, paths, paths[other])
+            elif path_has_point_side(paths, point) and not path_is_point_hash(paths, other):
+                link = (path_get_node_id(paths, point), path_get_node_id(paths, other))
+                length = path_get_length(paths, paths[point]) + path_get_length(paths, paths[other]) - 1
+                adj_dict[link] = length
+            else:
+                paths[point] = paths[other]
+
+        elif point not in paths:  # Current cell is not path
+            paths[point] = hash(point)

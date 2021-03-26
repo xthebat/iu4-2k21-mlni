@@ -17,6 +17,8 @@ def get_min_path(paths, current_node) -> Path:
     return min_path[0][0] if min_path else ()
 
 
+# CR: it's strange to hardcode adj-matrix filename ...
+# No connection with other code, isn't it?
 def find_path() -> (Path, int):
     adj_matrix = get_matrix(filename='adj.csv')
 

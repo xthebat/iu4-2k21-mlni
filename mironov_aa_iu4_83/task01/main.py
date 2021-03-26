@@ -6,21 +6,22 @@ from constants import *
 from csv_utils import make_csv_matrix, get_matrix
 from dkstr import find_path
 from neighbours import find_paths, path_from_node
-from utils import start_or_end_position, check_node, pointer_in_maze_scope, Nodes, Matrix, Paths, \
-    Adj_dict, next_node_id, print_results, get_corrections
+from utils import maze_is_point_node, maze_contains, Nodes, Matrix, Paths, \
+    Adjacency, next_node_id, print_results, maze_cols, maze_rows, rangend, maze_is_point_end, maze_is_point_start, \
+    Point, maze_is_point_wall, maze_get_cell, point_add, point_sub
 
 
-def check_cell(nodes: Nodes, matrix: Matrix, x: int, y: int) -> Union[NODE, PATH, EMPTY]:
-    """ Check if a cell is a node or a path or empty """
-    paths = 0
-    if not matrix[y][x]:
+def get_cell_type(nodes: Nodes, matrix: Matrix, point: Point) -> Union[NODE, PATH, EMPTY]:
+    """Check if a cell is a node or a path or just a wall"""
+
+    if maze_is_point_wall(matrix, point):
         return EMPTY
 
-    for side in SIDES:
-        corr_x, corr_y = get_corrections(side, invert=True)
-        if pointer_in_maze_scope(x + corr_x, y + corr_y, matrix):
-            if check_node(nodes, matrix[y + corr_y][x + corr_x], x, y):
-                paths += 1
+    paths = 0
+
+    for other in (point_sub(point, side) for side in SIDES):
+        # CR: and is lazy in python
+        paths += maze_contains(matrix, other) and maze_is_point_node(nodes, point, maze_get_cell(matrix, other))
 
     if paths in [1, 3, 4]:
         return NODE
@@ -31,35 +32,28 @@ def check_cell(nodes: Nodes, matrix: Matrix, x: int, y: int) -> Union[NODE, PATH
     return EMPTY
 
 
-def scan_maze(maze: Matrix, adj_dict: Adj_dict, paths: Paths, nodes: Nodes):
-    for y, row in enumerate(maze):
-        for x, col in enumerate(row):
+def scan_maze(maze: Matrix, adj_dict: Adjacency, paths: Paths, nodes: Nodes):
+    for point in rangend(maze_rows(maze), maze_cols(maze)):
 
-            if start_or_end_position(x, y, len(row), len(maze)):
-                nodes.update({(x, y): next_node_id(nodes)})
-                find_paths(adj_dict, paths, nodes, maze, x, y)
-                continue
-
-            cell = check_cell(nodes, maze, x, y)
-
-            if cell == EMPTY:
-                continue
+        if maze_is_point_start(maze, point) or maze_is_point_end(maze, point):
+            nodes[point] = next_node_id(nodes)
+            find_paths(adj_dict, paths, nodes, maze, point)
+        else:
+            cell = get_cell_type(nodes, maze, point)
 
             if cell == NODE:
-                nodes.update({(x, y): next_node_id(nodes)})
-
-                find_paths(adj_dict, paths, nodes, maze, x, y)
-                continue
-
-            if cell == PATH:
-                path_from_node(adj_dict, nodes, maze, paths, x, y)
-                continue
+                nodes[point] = next_node_id(nodes)
+                find_paths(adj_dict, paths, nodes, maze, point)
+            elif cell == PATH:
+                path_from_node(adj_dict, nodes, maze, paths, point)
+            elif cell == EMPTY:
+                pass
 
 
 def main(path_to_file):
     maze: Matrix = get_matrix(filename=path_to_file)
 
-    adj_dict: Adj_dict = {}
+    adj_dict: Adjacency = {}
     paths: Paths = {}
     nodes: Nodes = {}
 
