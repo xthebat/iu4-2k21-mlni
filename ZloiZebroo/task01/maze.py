@@ -37,7 +37,7 @@ def get_node(point, matrix, nodes):
 
         # 1 путь - тупиковый узел
         # > 2 путей - обычный узел
-        if ways_number == 1 or ways_number > 2:
+        if ways_number == 1 or ways_number > 2 or point.vec in nodes:
             print(f'{point.vec} is node')
             for x in ways:
                 print(f'neighbours : {x.vec}')
@@ -53,11 +53,24 @@ def get_node(point, matrix, nodes):
             # True - это узел
             return nodes, Node(point_id, point, True, ways)
         # False - это не узел
-        print(f'{point.vec} is not node ')
         return nodes, Node(None, point, False, ways)
 
     ways = find_possible_ways(matrix, point)
     return nodes, Node(None, point, False, ways)
+
+
+def will_wall_become_node(matrix, point):
+    neighbours = list()
+    vec_to_check = [(1, 1), (1, -1), (-1, 1), (-1, -1)]
+
+    for vec in vec_to_check:
+        if ray_cast('0', vec, point, matrix):
+            neighbours.append(Point(point.x + vec[0], point.y + vec[1]))
+
+    if len(neighbours) > 0:
+        return True
+    else:
+        return False
 
 
 # получить узел, если это узел
@@ -69,6 +82,7 @@ def get_wall(point, matrix, walls):
         # будем ли ломать?
         ways = find_possible_ways(matrix, point)
         ways_number = len(ways)
+        is_simple = will_wall_become_node(matrix, point)
 
         # > 1 путя - можем ломать!
         if ways_number > 1:
@@ -78,8 +92,7 @@ def get_wall(point, matrix, walls):
 
             # Чтобы не дублировать узлы
             if point.vec not in walls:
-                point_id = len(walls)
-                walls[point.vec] = Wall(point, ways)
+                walls[point.vec] = Wall(point, ways, is_simple)
             else:
                 point_id = walls[point.vec]
                 print(f'{point.vec} already exist with id: {point_id}')
@@ -101,26 +114,11 @@ def find_start_node(nodes, matrix):
 # Возможные пути по которым можно пойти от точки
 def find_possible_ways(matrix, point):
     possible_ways = list()
+    vec_to_check = [(0, 1), (0, -1), (-1, 0), (1, 0)]
 
-    # check up
-    if point.y != matrix.rows - 1:
-        if ray_cast((0, 1), point, matrix):
-            possible_ways.append(Point(point.x, point.y+1))
-
-    # check down
-    if point.y != 0:
-        if ray_cast((0, -1), point, matrix):
-            possible_ways.append(Point(point.x, point.y-1))
-
-    # check left
-    if point.x != 0:
-        if ray_cast((-1, 0), point, matrix):
-            possible_ways.append(Point(point.x-1, point.y))
-
-    # check right
-    if point.x != matrix.columns - 1:
-        if ray_cast((1, 0), point, matrix):
-            possible_ways.append(Point(point.x+1, point.y))
+    for vec in vec_to_check:
+        if ray_cast('1', vec, point, matrix):
+            possible_ways.append(Point(point.x + vec[0], point.y + vec[1]))
 
     return possible_ways
 
@@ -313,9 +311,20 @@ def dijkstra(end, start, adj_matrix, adj):
     return optimal_route, route_len
 
 
-# Возращает тру, если на коориданте находится 1
-def ray_cast(inc, point, matrix):
-    if matrix.data[point.y + inc[1]][point.x + inc[0]] == '1':
+# Возращает тру, если на коориданте находится target
+def ray_cast(target, inc, point, matrix, radius=1):
+    radius -= 1
+    row = point.y + inc[1]
+    col = point.x + inc[0]
+
+    # Защита от выхода за пределы матрицы
+    # if row >= 0 + radius or row <= matrix.rows - 1 + radius:
+    if 0 + radius > row or row > matrix.rows - 1 + radius:
+        return False
+    if 0 + radius > col or col > matrix.columns - 1 + radius:
+        return False
+
+    if matrix.data[row][col] == target:
         return True
     else:
         return False
@@ -347,6 +356,7 @@ def shortest_way(start, end, graph, brake_wall):
               'please, load graph form txt file')
 
     best_route, best_len = dijkstra(start, end, graph.adj_matrix, graph.adj)
+    best_graph = graph
 
     if brake_wall:
 
@@ -356,41 +366,58 @@ def shortest_way(start, end, graph, brake_wall):
         for wall_vec in graph.walls_to_brake:
 
             node_to_explore = graph.walls_to_brake[wall_vec]
+            print(f'\nWhat if to brake {node_to_explore.point.vec} wall')
+
             # initialize current best
             new_graph = copy.deepcopy(graph)
 
             # brake the wall
             new_graph.matrix.data[node_to_explore.point.y][node_to_explore.point.x] = '1'
-            new_node_id = len(new_graph.adj)
-            node_to_explore.id = new_node_id
-            new_graph.nodes[node_to_explore.point.vec] = new_node_id
 
-            # calculate new graph
-            new_graph.nodes, new_graph.adj = recursive_explorer([node_to_explore], new_graph.matrix,
-                                                                new_graph.nodes, new_graph.adj)
+            if not node_to_explore.is_simple:
 
-            # find shortest way
+                # вместо стенки будет узел, так просто закинем его в recursive_explorer
+                new_node_id = len(new_graph.adj)
+                node_to_explore.id = new_node_id
+                new_graph.nodes[node_to_explore.point.vec] = new_node_id
+                new_graph.nodes, new_graph.adj = recursive_explorer([node_to_explore], new_graph.matrix,
+                                                                    new_graph.nodes, new_graph.adj)
+
+            else:
+                # вместо стенки будет проход, запустим recursive_explorer для его соседей, чтобы нащупали друг-друга
+                neighbours = [get_node(x, new_graph.matrix, new_graph.nodes)[1] for x in node_to_explore.neighbours]
+                neighbours = [x for x in neighbours if x.id if not None]
+                new_graph.nodes, new_graph.adj = recursive_explorer(neighbours, new_graph.matrix,
+                                                                    new_graph.nodes, new_graph.adj)
+
+            # Считаем длинну пути таекущей итерации графа
             new_graph.adj_matrix = adjacency_matrix(new_graph.adj)
             new_route, new_len = dijkstra(start, end, new_graph.adj_matrix, new_graph.adj)
 
             if new_len < best_len:
-                graph = new_graph
+                best_graph = new_graph
                 best_route = new_route
                 best_len = new_len
 
+        # Возвращае на место
+        graph.nodes = {v: list(k) for k, v in graph.nodes.items()}
+
     print(f'Shortest way is: {best_route}\nwith len: {best_len}')
 
-    graph.nodes = {v: list(k) for k, v in graph.nodes.items()}
+    # сохраним кратчайший путь
+    best_graph.shortest_way = best_route
+    best_graph.shortest_way_len = best_len
 
-    return graph
+    return best_graph
 
 
 class Wall(object):
 
-    def __init__(self, point, neighbours):
+    def __init__(self, point, neighbours, is_simple):
         self.point = point
         self.neighbours = neighbours
         self.id = None
+        self.is_simple = is_simple
 
     def __repr__(self):
         return str(self)
@@ -407,6 +434,12 @@ class Node(object):
         self.is_simple = is_simple
         self.parent_node = Point(None, None)
         self.neighbours = ways
+
+    def __repr__(self):
+        return str(self)
+
+    def __str__(self):
+        return f'Node (ID: {self.id}; Vec: {self.point.vec})'
 
 
 class Matrix(object):
@@ -429,7 +462,7 @@ class Point(object):
         return str(self)
 
     def __str__(self):
-        return f'(x:{self.x}, y:{self.y})'
+        return f'Point (x:{self.x}, y:{self.y})'
 
 
 class Graph(object):
@@ -440,6 +473,8 @@ class Graph(object):
         self.adj = None
         self.adj_matrix = None
         self.walls_to_brake = None
+        self.shortest_way = None
+        self.shortest_way_len = None
 
 
 def main():
@@ -450,14 +485,12 @@ def main():
     maze_4 = 'maze_04.txt'
     maze_6 = 'maze_06.txt'
     maze_7 = 'maze_07.txt'
+    maze_8 = 'maze_08.txt'
+    maze_9 = 'maze_09.txt'
     maze_json = 'maze_graph.json'
 
     # Читаем лабиринт из тхт файла
-    graph = load_from_txt(maze_7)
-
-    print(f'Maze nodes: {graph.nodes}')
-    print(f'Maze adj: {graph.adj}')
-    print(f'Maze adj: {graph.adj_matrix}')
+    graph = load_from_txt(maze_9)
 
     # Сохраняем граф в json
     to_json(graph, maze_json)
@@ -469,7 +502,7 @@ def main():
     for r in graph2.adj_matrix:
         print(r)
 
-    best_graph = shortest_way(1, 0, graph, brake_wall=True)
+    best_graph = shortest_way(0, 3, graph, brake_wall=True)
 
     return 0
 
