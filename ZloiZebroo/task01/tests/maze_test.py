@@ -69,28 +69,6 @@ class MazeTests(unittest.TestCase):
         ]
         self.assertEqual(expected, actual)
 
-    def test_find_start(self):
-        data = graph.load_from_txt('../maze_03.txt')
-        ans1, ans2 = graph.find_start_node(dict(), data.matrix)
-        actual = [
-            ans1,
-            ans2.parent_node.vec,
-            ans2.point.vec,
-            len(ans2.neighbours),
-            ans2.id,
-            ans2.is_simple
-        ]
-        expected = [
-            {(1, 0): 0},
-            (None, None),
-            (1, 0),
-            3,
-            0,
-            True
-        ]
-
-        self.assertEqual(expected, actual)
-
     def test_shortest_way(self):
         data = graph.load_from_txt('../maze_07.txt')
         data = graph.shortest_way(1, 0, data, brake_wall=False)
