@@ -90,3 +90,33 @@ class MazeTests(unittest.TestCase):
         ]
 
         self.assertEqual(expected, actual)
+
+    def test_shortest_way(self):
+        data = graph.load_from_txt('../maze_07.txt')
+        data = graph.shortest_way(1, 0, data, brake_wall=False)
+        actual = [data.shortest_way, data.shortest_way_len]
+        expected = [[1, 0], 9]
+        self.assertEqual(expected, actual)
+
+    def test_shortest_way_brake_wall(self):
+        data = graph.load_from_txt('../maze_07.txt')
+        data = graph.shortest_way(1, 0, data, brake_wall=True)
+        actual = [data.shortest_way, data.shortest_way_len]
+        expected = [[1, 5, 2, 4, 0], 7]
+        self.assertEqual(expected, actual)
+
+    def test_raycast(self):
+        data = graph.load_from_txt('../maze_07.txt')
+        matrix = data.matrix
+        actual = [graph.ray_cast('1', (0, 0), graph.Point(0, 0), matrix),
+                  graph.ray_cast('1', (1, 0), graph.Point(0, 0), matrix),
+                  graph.ray_cast('1', (0, 0), graph.Point(0, 1), matrix)]
+        expected = [False, False, True]
+        self.assertEqual(expected, actual)
+
+    def test_shortest_way_brake_wall(self):
+        data = graph.load_from_txt('../maze_09.txt')
+        data = graph.shortest_way(0, 3, data, brake_wall=True)
+        actual = [data.shortest_way, data.shortest_way_len]
+        expected = [[0, 1, 2, 4, 3], 5]
+        self.assertEqual(expected, actual)
