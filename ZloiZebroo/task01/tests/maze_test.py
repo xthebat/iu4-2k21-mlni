@@ -8,19 +8,19 @@ class MazeTests(unittest.TestCase):
         data = graph.load_from_txt('../maze_02.txt')
         actual = [data.nodes, data.adj, data.adj_matrix, data.matrix.data]
         expected = [
-            {0: [0, 0], 1: [1, 2], 2: [9, 4], 3: [9, 2], 4: [9, 5], 5: [9, 0]},
-            {0: {1: 3},
-             1: {0: 3, 2: 10, 3: 8},
-             2: {1: 10, 3: 2, 4: 1},
-             3: {1: 8, 2: 2, 5: 2},
-             4: {2: 1},
-             5: {3: 2}},
-            [[None, 3, None, None, None, None],
-             [3, None, 10, 8, None, None],
-             [None, 10, None, 2, 1, None],
-             [None, 8, 2, None, None, 2],
-             [None, None, 1, None, None, None],
-             [None, None, None, 2, None, None]],
+            {0: [0, 0], 1: [9, 0], 2: [1, 2], 3: [9, 2], 4: [9, 4], 5: [9, 5]},
+            {0: {2: 3},
+             1: {3: 2},
+             2: {0: 3, 4: 10},
+             3: {1: 2, 4: 2},
+             4: {2: 10, 3: 2, 5: 1},
+             5: {4: 1}},
+            [[None, None, 3, None, None, None],
+             [None, None, None, 2, None, None],
+             [3, None, None, None, 10, None],
+             [None, 2, None, None, 2, None],
+             [None, None, 10, 2, None, 1],
+             [None, None, None, None, 1, None]],
             [['1', '1', '0', '0', '0', '0', '0', '0', '0', '1'],
              ['0', '1', '0', '0', '0', '0', '0', '0', '0', '1'],
              ['0', '1', '1', '1', '1', '1', '1', '1', '1', '1'],
@@ -55,17 +55,17 @@ class MazeTests(unittest.TestCase):
         data = graph.load_from_txt('../maze_03.txt')
         actual = [data.nodes, data.adj, data.adj_matrix]
         expected = [
-            {0: [1, 0], 1: [1, 1], 2: [0, 1], 3: [2, 1], 4: [1, 2]},
-            {0: {1: 1, 2: 2, 3: 2},
-             1: {0: 1, 2: 1, 3: 1, 4: 1},
-             2: {0: 2, 1: 1, 4: 2},
-             3: {0: 2, 1: 1, 4: 2},
-             4: {1: 1, 2: 2, 3: 2}},
-            [[None, 1, 2, 2, None],
-             [1, None, 1, 1, 1],
-             [2, 1, None, None, 2],
-             [2, 1, None, None, 2],
-             [None, 1, 2, 2, None]]
+            {0: [1, 0], 1: [0, 1], 2: [1, 1], 3: [2, 1], 4: [1, 2]},
+            {0: {1: 2, 2: 1, 3: 2},
+             1: {0: 2, 4: 2},
+             2: {0: 1, 4: 1},
+             3: {0: 2, 4: 2},
+             4: {1: 2, 2: 1, 3: 2}},
+            [[None, 2, 1, 2, None],
+             [2, None, None, None, 2],
+             [1, None, None, None, 1],
+             [2, None, None, None, 2],
+             [None, 2, 1, 2, None]]
         ]
         self.assertEqual(expected, actual)
 
