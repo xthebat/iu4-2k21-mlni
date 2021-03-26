@@ -102,7 +102,7 @@ class MazeTests(unittest.TestCase):
         data = graph.load_from_txt('../maze_07.txt')
         data = graph.shortest_way(1, 0, data, brake_wall=True)
         actual = [data.shortest_way, data.shortest_way_len]
-        expected = [[1, 5, 2, 4, 0], 7]
+        expected = [[1, 4, 5, 3, 0], 7]
         self.assertEqual(expected, actual)
 
     def test_raycast(self):
@@ -114,7 +114,7 @@ class MazeTests(unittest.TestCase):
         expected = [False, False, True]
         self.assertEqual(expected, actual)
 
-    def test_shortest_way_brake_wall(self):
+    def test_shortest_way_brake_wall_2(self):
         data = graph.load_from_txt('../maze_09.txt')
         data = graph.shortest_way(0, 3, data, brake_wall=True)
         actual = [data.shortest_way, data.shortest_way_len]

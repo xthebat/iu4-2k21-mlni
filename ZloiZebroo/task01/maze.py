@@ -53,6 +53,7 @@ def get_node(point, matrix, nodes):
             # True - это узел
             return nodes, Node(point_id, point, True, ways)
         # False - это не узел
+        print(f'{point.vec} is not node ')
         return nodes, Node(None, point, False, ways)
 
     ways = find_possible_ways(matrix, point)
