@@ -1,158 +1,97 @@
 import sys
 import numpy as np
-from typing import List, Tuple, Dict, Union, Set
+from typing import Tuple, Dict, Set
+from maze_tools import Maze, Point, Numeric
+import maze_tools
+from li import State
 
-numeric = Union[float, int]
-Matrix = List[List[numeric]]
-Point = Tuple[int, int]
 Link = Tuple[Point, Point]
 
 
-def matrix_init(rows: int, cols: int, value: numeric) -> Matrix:
-    return [[value for _ in range(cols)] for _ in range(rows)]
-
-
-def matrix_get(maze: Matrix, point: Point) -> int:
-    return maze[point[0]][point[1]]
-
-
-def matrix_set(maze: Matrix, point: Point, value: numeric):
-    maze[point[0]][point[1]] = value
-
-
-def matrix_rows(maze: Matrix) -> int:
-    return len(maze)
-
-
-def matrix_cols(maze: Matrix) -> int:
-    return len(maze[0])
-
-
-def read_maze_from_file(filepath: str) -> Matrix:
-    with open(filepath, "rt") as file:
-        return [[int(num) for num in line.split(' ')] for line in file]
-
-
-def neighbours(maze, node):
-    for drow, dcol in (0, 1), (1, 0), (0, -1), (-1, 0):
-        neighbour_row, neighbour_col = node
-        neighbour_row += drow
-        neighbour_col += dcol
-        if 0 <= neighbour_row < len(maze) and 0 <= neighbour_col < len(maze[neighbour_row]):
-            yield neighbour_row, neighbour_col
+def adj_add_link(adj: Dict[Point, Dict[Point, Numeric]], root, node, length):
+    if adj.get(root) is None:
+        adj[root] = {node: length}
+    else:
+        adj[root][node] = length
 
 
 def adj_from_maze(
-        maze: Matrix,
-        weight_map: Matrix,
-        visited: Set[Point],
-        queue: List[Link],
-        end: Point,
-        adj: Dict[Point, Dict[Point, numeric]]
-) -> Dict[Point, Dict[Point, numeric]]:
-    for root, node in queue:
-        visited[node] = True
-        unvisited = list(filter(lambda point: not visited and matrix_get(maze, point) == 1, neighbours(maze, node)))
+        s: State,
+        end: Point
+) -> Dict[Point, Dict[Point, Numeric]]:
+    for root, node in s:
+        s.visited.add(node)
+        unvisited = list(filter(lambda point: point not in s.visited and s.maze[point],
+                                maze_tools.neighbours(s.maze, node)))
 
         if (len(unvisited) != 1 or node == end) and node != root:
-            # получаем вес ребра
-            length = matrix_get(weight_map, node) - matrix_get(weight_map, root)
-            if adj.get(root) is None:
-                adj[root] = {node: length}
-            else:
-                adj[root][node] = length
-
+            # добавляем ребро
+            adj_add_link(adj=s.adj, root=root, node=node, length=s.weight_map[node] - s.weight_map[root])
             root = node
 
-        for neighbour in unvisited:
-            row, col = neighbour
-            queue.append((root, neighbour))
-            weight_map[row][col] = weight_map[node[0]][node[1]] + 1
+        # Если не обновить очередь итерация заглохнет
+        s.update_queue(((root, neigh, s.weight_map[node] + s.maze[neigh]) for neigh in unvisited))
 
-    return adj
+    return s.adj
 
 
-def build_graph_from_maze_map(maze: Matrix, start: Point, end: Point, wall=False):
-    if wall:
+def build_graph_from_maze_map(maze: Maze, start: Point, end: Point, break_wall=False):
+    if break_wall:
         min_length = np.inf
         min_adj = dict()
 
         # do some magic
-        for new_maze, weight_map, visited, queue, adj in gen_break_wall_points(maze, start, end):
-            adj = adj_from_maze(new_maze, weight_map, visited, queue, end, adj)
-            if matrix_get(weight_map, end) < min_length:
-                min_length = matrix_get(weight_map, end)
+        for state in gen_break_wall_points(maze, start, end):
+            adj = adj_from_maze(state, end)
+            if state.weight_map[end] < min_length:
+                min_length = state.weight_map[end]
                 min_adj = adj
 
         return min_adj
     else:
         # в очереди хранятся пары корень, текущий узел
-        queue = [(start, start)]
-        weight_map = [[np.inf for _ in row] for row in maze]
-        matrix_set(weight_map, start, 0)
-        visited = set()
-        adj = dict()
+        s = State(maze, start)
 
-        return adj_from_maze(maze, weight_map, visited, queue, end, adj)
+        return adj_from_maze(s, end)
 
 
-def neighs_has_pass(maze: Matrix, visited: Set[Point], point: Point):
-    return any(map(lambda it: not visited and matrix_get(maze, it), neighbours(maze, point)))
+def neighs_has_pass(maze: Maze, visited: Set[Point], point: Point):
+    return any(map(lambda it: it not in visited and maze[it], maze_tools.neighbours(maze, point)))
 
 
-def neighs_get_passes(maze: Matrix, visited: Set[Point], point: Point):
-    return set(filter(lambda it: not visited and matrix_get(maze, it), neighbours(maze, point)))
+def neighs_get_passes(maze: Maze, visited: Set[Point], point: Point):
+    return set(filter(lambda it: it not in visited and maze[it], maze_tools.neighbours(maze, point)))
 
 
-def neighs_get_walls(maze: Matrix, point: Point):
-    return filter(lambda x: not matrix_get(maze, x), neighbours(maze, point))
+def neighs_get_walls(maze: Maze, point: Point):
+    return filter(lambda x: not maze[x], maze_tools.neighbours(maze, point))
 
 
-def gen_break_wall_points(maze: Matrix, start: Point, end: Point):
-    queue = [(start, start)]
+def gen_break_wall_points(maze: Maze, start: Point, end: Point):
+    state = State(maze=maze, start=start)
+    for root, node in state:
 
-    weight_map = matrix_init(matrix_rows(maze), matrix_cols(maze), np.inf)
-    matrix_set(maze, start, 0)
-
-    visited = set()
-    adj = dict()
-
-    for i, node_chunk in enumerate(queue):
-        root, node = node_chunk
-
-        visited.add(node)
-        unvisited = neighs_get_passes(maze, visited, node)
+        state.visited.add(node)
+        unvisited = neighs_get_passes(state.maze, state.visited, node)
 
         # стены у которых есть непосещенные клетки с 1
 
-        walls = filter(lambda wall: neighs_has_pass(maze, visited, wall), neighs_get_walls(maze, node))
+        walls = filter(lambda w: neighs_has_pass(state.maze, state.visited, w), neighs_get_walls(state.maze, node))
 
         for wall in walls:
-            q = queue[i:].copy()
+            new_state = state.copy()
+            new_state.maze[wall] = 1
+            new_state.queue.insert(0, (root, node))
 
-            new_maze = [row.copy() for row in maze]
-            matrix_set(new_maze, wall, 1)
-
-            # CR: а зачем здесь копирование всего подряд? visited - локальная переменная по идее она не должна
-            #     случайно поменяться
-            # CR: грустно, что очень много возвращается значений через tuple и неплохо бы разделить хотя бы на
-            #     отдельные переменные
-            yield new_maze, [row.copy() for row in weight_map], visited.copy(), q, {k: v.copy() for k, v in adj.items()}
+            yield new_state
 
         if (len(unvisited) != 1 or node == end) and node != root:
-            # получаем вес ребра
-            length = matrix_get(weight_map, node) - matrix_get(weight_map, root)
-            if adj.get(root) is None:
-                adj[root] = {node: length}
-            else:
-                adj[root][node] = length
-
+            # добавляем ребро
+            adj_add_link(adj=state.adj, root=root, node=node, length=state.weight_map[node] - state.weight_map[root])
             root = node
 
-        for neighbour in unvisited:
-            queue.append((root, neighbour))
-            value = matrix_get(weight_map, node) + 1
-            matrix_set(weight_map, neighbour, value)
+        # Если не обновить очередь итерация заглохнет
+        state.update_queue(((root, neigh, state.weight_map[node] + state.maze[neigh]) for neigh in unvisited))
 
 
 def main(args):
@@ -162,9 +101,9 @@ def main(args):
 
     filename = args[1]
 
-    maze = read_maze_from_file(filename)
+    maze = maze_tools.from_file(filename)
 
-    adj = build_graph_from_maze_map(maze, (0, 0), (len(maze) - 1, len(maze[-1]) - 1), wall=True)
+    adj = build_graph_from_maze_map(maze, Point(row=0, col=0), Point(row=maze.rows() - 1, col=maze.cols() - 1), True)
 
     print(adj)
 

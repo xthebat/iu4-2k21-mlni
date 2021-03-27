@@ -1,5 +1,7 @@
 import unittest
 import main
+from task01 import maze_tools
+from maze_tools import Point, Maze
 
 
 class Test(unittest.TestCase):
@@ -11,7 +13,7 @@ class Test(unittest.TestCase):
             [0, 0, 1, 0],
             [1, 1, 1, 1]
         ]
-        received = main.read_maze_from_file(filename)
+        received = maze_tools._read_matrix_from_file(filename)
         self.assertEqual(expected, received)
 
     def test_build_graph_simple_case(self):
@@ -25,7 +27,7 @@ class Test(unittest.TestCase):
         expected = {
             (0, 0): {(3, 3): 6}
         }
-        received = main.build_graph_from_maze_map(maze, (0, 0), (3, 3))
+        received = main.build_graph_from_maze_map(Maze(maze), Point(0, 0), Point(3, 3))
         self.assertEqual(expected, received)
 
     def test_build_graph_island_case(self):
@@ -39,7 +41,7 @@ class Test(unittest.TestCase):
         expected = {
             (0, 0): {(3, 3): 6}
         }
-        received = main.build_graph_from_maze_map(maze, (0, 0), (3, 3))
+        received = main.build_graph_from_maze_map(Maze(maze), Point(0, 0), Point(3, 3))
         self.assertEqual(expected, received)
 
     def test_build_graph_mult_nodes_case(self):
@@ -55,7 +57,7 @@ class Test(unittest.TestCase):
             (1, 0): {(3, 0): 2, (1, 2): 2},
             (1, 2): {(0, 3): 2, (3, 3): 3}
         }
-        received = main.build_graph_from_maze_map(maze, (0, 0), (3, 3))
+        received = main.build_graph_from_maze_map(Maze(maze), Point(0, 0), Point(3, 3))
         self.assertEqual(expected, received)
 
     def test_build_graph_cycled_path(self):
@@ -72,7 +74,7 @@ class Test(unittest.TestCase):
             (2, 0): {(4, 4): 6, (2, 4): 8},
             (4, 4): {(2, 4): 2}
         }
-        received = main.build_graph_from_maze_map(maze, (0, 0), (4, 4))
+        received = main.build_graph_from_maze_map(Maze(maze), Point(0, 0), Point(4, 4))
         self.assertEqual(expected, received)
 
     def test_build_graph_break_wall(self):
@@ -90,7 +92,7 @@ class Test(unittest.TestCase):
             (2, 0): {(2, 2): 2, (4, 0): 2},
             (4, 4): {(4, 2): 2}
         }
-        received = main.build_graph_from_maze_map(maze, (0, 0), (4, 4), wall=True)
+        received = main.build_graph_from_maze_map(Maze(maze), Point(0, 0), Point(4, 4), break_wall=True)
         self.assertEqual(expected, received)
 
     def test_build_graph_without_path(self):
@@ -101,7 +103,7 @@ class Test(unittest.TestCase):
         ]
 
         expected = {}
-        received = main.build_graph_from_maze_map(maze, (0, 0), (2, 2))
+        received = main.build_graph_from_maze_map(Maze(maze), Point(0, 0), Point(2, 2))
         self.assertEqual(expected, received)
 
     def test_build_graph_without_path_break_wall(self):
@@ -115,5 +117,5 @@ class Test(unittest.TestCase):
             (0, 0): {(2, 2): 4}
         }
 
-        received = main.build_graph_from_maze_map(maze, (0, 0), (2, 2), wall=True)
+        received = main.build_graph_from_maze_map(Maze(maze), Point(0, 0), Point(2, 2), break_wall=True)
         self.assertEqual(expected, received)
