@@ -104,3 +104,37 @@ class Tests(unittest.TestCase):
 
         received = main.simplify_paths(main.make_maze_graph(maze), (0, 0), (3, 3))
         self.assertEqual(expected, received)
+
+    def test_find_simple_path(self):
+        adj = {
+            (0, 0): {(3, 3): 6},
+            (3, 3): {(0, 0): 6},
+        }
+
+        expected = [(0, 0), (3, 3)]
+        received = main.find_path(adj, (0, 0), (3, 3))
+        self.assertEqual(expected, received)
+
+    def test_find_path(self):
+        adj = {
+            (0, 0): {(0, 1): 1},
+            (0, 1): {(0, 0): 1, (2, 2): 3, (2, 3): 4},
+            (2, 2): {(0, 1): 3, (4, 3): 3, (2, 3): 1},
+            (2, 3): {(0, 1): 4, (2, 2): 1},
+            (4, 3): {(2, 2): 3}
+        }
+
+        expected = [(0, 0), (0, 1), (2, 2), (4, 3)]
+        received = main.find_path(adj, (0, 0), (4, 3))
+        self.assertEqual(expected, received)
+
+    def test_find_path_in_maze_without_path(self):
+        adj = {
+            (0, 0): {(0, 1): 1},
+            (0, 1): {(0, 0): 1},
+            (2, 4): {(4, 4): 2},
+            (4, 4): {(2, 4): 2}
+        }
+        expected = []
+        received = main.find_path(adj, (0, 0), (4, 4))
+        self.assertEqual(expected, received)
