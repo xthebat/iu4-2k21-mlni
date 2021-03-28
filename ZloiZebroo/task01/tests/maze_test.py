@@ -30,17 +30,6 @@ class MazeTests(unittest.TestCase):
         ]
         self.assertEqual(expected, actual)
 
-    def test_load_from_json(self):
-        data = graph.load_from_json('maze_graph.json')
-        actual = [data.nodes, data.adj, data.adj_matrix]
-        expected = [
-            {'0': [0, 0], '1': [1, 2], '2': [9, 4], '3': [9, 2], '4': [9, 5], '5': [9, 0]},
-            {'0': {'1': 2}, '1': {'0': 2, '2': 9, '3': 7}, '2': {'1': 9, '4': 0, '3': 1}, '3': {'1': 7, '2': 1, '5': 1}, '4': {'2': 0}, '5': {'3': 1}},
-            [[None, 2, None, None, None, None], [2, None, 9, 7, None, None], [None, 9, None, 1, 0, None],
-             [None, 7, 1, None, None, 1], [None, None, 0, None, None, None], [None, None, None, 1, None, None]]
-        ]
-        self.assertEqual(expected, actual)
-
     def test_graph_2x2(self):
         data = graph.load_from_txt('../maze_04.txt')
         actual = [data.nodes, data.adj, data.adj_matrix]

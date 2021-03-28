@@ -2,7 +2,6 @@ import json
 import itertools
 from typing import Iterator
 import math
-import copy
 
 # Пример графа, который должен получиться
 # {
@@ -355,6 +354,18 @@ def find_walls(matrix):
     return walls
 
 
+def fast_deep_copy(dictionary):
+    return eval(str(dictionary))
+
+
+def stupid_python_object_system(data, nodes, adj):
+    graph = Graph()
+    graph.matrix = Matrix([[x for x in x] for x in data])
+    graph.nodes = fast_deep_copy(nodes)
+    graph.adj = fast_deep_copy(adj)
+    return graph
+
+
 def shortest_way(start, end, graph, brake_wall):
 
     # солнышко в руках
@@ -385,8 +396,7 @@ def shortest_way(start, end, graph, brake_wall):
             node_to_explore = graph.walls_to_brake[wall_vec]
             print(f'\nWhat if to brake {node_to_explore.point.vec} wall')
 
-            # initialize current best
-            new_graph = copy.deepcopy(graph)
+            new_graph = stupid_python_object_system(graph.matrix.data, graph.nodes, graph.adj)
 
             # brake the wall
             new_graph.matrix.data[node_to_explore.point.y][node_to_explore.point.x] = '1'
@@ -417,9 +427,10 @@ def shortest_way(start, end, graph, brake_wall):
                 best_len = new_len
 
         # Возвращае на место
-        graph.nodes = {v: list(k) for k, v in graph.nodes.items()}
+        best_graph.nodes = {v: list(k) for k, v in best_graph.nodes.items()}
 
     print(f'\nShortest way is: {best_route}\nwith len: {best_len}')
+    print([best_graph.nodes[x] for x in best_route])
 
     # сохраним кратчайший путь
     best_graph.shortest_way = best_route
@@ -508,7 +519,7 @@ def main():
     maze_json = 'maze_graph.json'
 
     # Читаем лабиринт из тхт файла
-    graph = load_from_txt(maze_8)
+    graph = load_from_txt(maze_9)
 
     # Сохраняем граф в json
     to_json(graph, maze_json)
