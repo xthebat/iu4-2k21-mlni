@@ -17,21 +17,9 @@ def adj_add_link(adj: Dict[Point, Dict[Point, Numeric]], root, node, length):
 
 def adj_from_maze(
         s: State,
-        end: Point
 ) -> Dict[Point, Dict[Point, Numeric]]:
-    for root, node in s:
-        s.visited.add(node)
-        unvisited = list(filter(lambda point: point not in s.visited and s.maze[point],
-                                maze_tools.neighbours(s.maze, node)))
-
-        if (len(unvisited) != 1 or node == end) and node != root:
-            # добавляем ребро
-            adj_add_link(adj=s.adj, root=root, node=node, length=s.weight_map[node] - s.weight_map[root])
-            root = node
-
-        # Если не обновить очередь итерация заглохнет
-        s.update_queue(((root, neigh, s.weight_map[node] + s.maze[neigh]) for neigh in unvisited))
-
+    for node in s:
+        pass
     return s.adj
 
 
@@ -42,7 +30,7 @@ def build_graph_from_maze_map(maze: Maze, start: Point, end: Point, break_wall=F
 
         # do some magic
         for state in gen_break_wall_points(maze, start, end):
-            adj = adj_from_maze(state, end)
+            adj = adj_from_maze(state)
             if state.weight_map[end] < min_length:
                 min_length = state.weight_map[end]
                 min_adj = adj
@@ -50,9 +38,9 @@ def build_graph_from_maze_map(maze: Maze, start: Point, end: Point, break_wall=F
         return min_adj
     else:
         # в очереди хранятся пары корень, текущий узел
-        s = State(maze, start)
+        s = State(maze=maze, start=start, end=end)
 
-        return adj_from_maze(s, end)
+        return adj_from_maze(s)
 
 
 def neighs_has_pass(maze: Maze, visited: Set[Point], point: Point):
@@ -68,30 +56,16 @@ def neighs_get_walls(maze: Maze, point: Point):
 
 
 def gen_break_wall_points(maze: Maze, start: Point, end: Point):
-    state = State(maze=maze, start=start)
-    for root, node in state:
-
-        state.visited.add(node)
-        unvisited = neighs_get_passes(state.maze, state.visited, node)
-
-        # стены у которых есть непосещенные клетки с 1
+    state = State(maze=maze, end=end, start=start)
+    for node in state:
 
         walls = filter(lambda w: neighs_has_pass(state.maze, state.visited, w), neighs_get_walls(state.maze, node))
 
         for wall in walls:
             new_state = state.copy()
             new_state.maze[wall] = 1
-            new_state.queue.insert(0, (root, node))
 
             yield new_state
-
-        if (len(unvisited) != 1 or node == end) and node != root:
-            # добавляем ребро
-            adj_add_link(adj=state.adj, root=root, node=node, length=state.weight_map[node] - state.weight_map[root])
-            root = node
-
-        # Если не обновить очередь итерация заглохнет
-        state.update_queue(((root, neigh, state.weight_map[node] + state.maze[neigh]) for neigh in unvisited))
 
 
 def main(args):
