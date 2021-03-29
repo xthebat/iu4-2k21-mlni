@@ -2,8 +2,8 @@
 import unittest
 
 from csv_utils import get_matrix
-from dkstr import find_path
-from main import scan_maze
+from dkstr import shortest_path
+from models import Maze
 
 
 class MazeTest(unittest.TestCase):
@@ -13,22 +13,16 @@ class MazeTest(unittest.TestCase):
         # after review: results are the same just differ order
         expected = {(0, 1): 1, (1, 2): 2, (1, 3): 2, (2, 3): 4, (2, 4): 6, (3, 4): 8}
 
-        maze = get_matrix(filename='6x5.csv')
+        matrix = get_matrix(filename='6x5.csv')
 
-        adj_dict = dict()
-        paths = dict()
-        nodes = dict()
+        maze = Maze(matrix)
 
-        scan_maze(maze, adj_dict, paths, nodes)
-
-        print(nodes)
-
-        self.assertEqual(expected, adj_dict)
+        self.assertEqual(expected, maze.adjacency)
 
     def test_shortest_path(self):
         expected = 9
 
-        path, length = find_path()
+        path, length = shortest_path()
         self.assertEqual(expected, length)
 
 

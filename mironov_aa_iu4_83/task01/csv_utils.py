@@ -1,6 +1,6 @@
 import csv
 
-from utils import Adjacency, Matrix
+from annotations import Matrix, Adjacency
 
 
 def get_matrix(filename: str) -> Matrix:
