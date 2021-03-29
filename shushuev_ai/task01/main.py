@@ -18,29 +18,28 @@ def adj_add_link(adj: Dict[Point, Dict[Point, Numeric]], root, node, length):
 def adj_from_maze(
         s: State,
 ) -> Dict[Point, Dict[Point, Numeric]]:
-    for node in s:
+    for _ in s:
         pass
     return s.adj
 
 
-def build_graph_from_maze_map(maze: Maze, start: Point, end: Point, break_wall=False):
-    if break_wall:
-        min_length = np.inf
-        min_adj = dict()
+def build_graph_from_maze(maze: Maze, start: Point, end: Point):
+    s = State(maze=maze, start=start, end=end)
+    return adj_from_maze(s)
 
-        # do some magic
-        for state in gen_break_wall_points(maze, start, end):
-            adj = adj_from_maze(state)
-            if state.weight_map[end] < min_length:
-                min_length = state.weight_map[end]
-                min_adj = adj
 
-        return min_adj
-    else:
-        # в очереди хранятся пары корень, текущий узел
-        s = State(maze=maze, start=start, end=end)
+def build_graph_form_maze_with_break_wall(maze: Maze, start: Point, end: Point):
+    min_length = np.inf
+    min_adj = dict()
 
-        return adj_from_maze(s)
+    # do some magic
+    for state in gen_break_wall_points(maze, start, end):
+        adj = adj_from_maze(state)
+        if state.weight_map[end] < min_length:
+            min_length = state.weight_map[end]
+            min_adj = adj
+
+    return min_adj
 
 
 def neighs_has_pass(maze: Maze, visited: Set[Point], point: Point):
@@ -77,7 +76,7 @@ def main(args):
 
     maze = maze_tools.from_file(filename)
 
-    adj = build_graph_from_maze_map(maze, Point(row=0, col=0), Point(row=maze.rows() - 1, col=maze.cols() - 1), True)
+    adj = build_graph_from_maze(maze, Point(row=0, col=0), Point(row=maze.rows() - 1, col=maze.cols() - 1))
 
     print(adj)
 

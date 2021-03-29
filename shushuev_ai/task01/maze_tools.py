@@ -26,6 +26,9 @@ class Maze(object):
     def __setitem__(self, p: Point, value: Numeric):
         self.maze_map[p.row][p.col] = value
 
+    def __contains__(self, item: Point) -> bool:
+        return 0 <= item.row < self.rows() and 0 <= item.col < self.cols()
+
     def rows(self) -> int:
         """ Возвращает количество строк в лабиринте """
         return len(self.maze_map)
@@ -33,10 +36,6 @@ class Maze(object):
     def cols(self) -> int:
         """ Возвращает количество столбцов в лабиринте """
         return len(self.maze_map[0])
-
-    def is_valid_point(self, p: Point) -> bool:
-        """ Проверяет точку на валидность """
-        return 0 <= p.row < self.rows() and 0 <= p.col < self.cols()
 
     def copy(self):
         """ Копирует себя """
@@ -58,7 +57,7 @@ def neighbours(maze: Maze, point: Point) -> Iterable[Point]:
     """ Возвращает соседей точки point в лабиринте maze """
     for delta in (0, 1), (1, 0), (0, -1), (-1, 0):
         neigh = point + delta
-        if maze.is_valid_point(neigh):
+        if neigh in maze:
             yield neigh
 
 
