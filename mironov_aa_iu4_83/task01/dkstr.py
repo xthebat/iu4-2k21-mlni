@@ -2,6 +2,9 @@
 from csv_utils import get_matrix
 from typing import Tuple
 
+from annotations import Matrix
+from utils import benchmark
+
 Path = Tuple[int, ...]
 
 
@@ -17,10 +20,11 @@ def get_min_path(paths, current_node) -> Path:
     return min_path[0][0] if min_path else ()
 
 
-# CR: it's strange to hardcode adj-matrix filename ...
-# No connection with other code, isn't it?
-def find_path() -> (Path, int):
-    adj_matrix = get_matrix(filename='adj.csv')
+@benchmark
+def shortest_path(adj_matrix: Matrix = None) -> (Path, int):
+
+    if not adj_matrix:
+        adj_matrix = get_matrix(filename='adj.csv')
 
     paths = {}
 
@@ -36,7 +40,3 @@ def find_path() -> (Path, int):
     global_min_paths = get_min_path(paths, len(adj_matrix) - 1)
     return global_min_paths, paths[global_min_paths]
 
-
-if __name__ == '__main__':
-    p, l = find_path()
-    print(f'Minimal path: {p}, Length: {l}')

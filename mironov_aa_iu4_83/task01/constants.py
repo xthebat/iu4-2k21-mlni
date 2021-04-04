@@ -1,8 +1,8 @@
 from typing import List
 
-EMPTY: str = 'empty'
+WALL: str = 'wall'
 NODE: str = 'node'
-PATH: str = 'way'
+PATH: str = 'path'
 
 LEFT: str = "left"
 RIGHT: str = "right"
