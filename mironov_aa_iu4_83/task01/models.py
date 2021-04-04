@@ -1,6 +1,7 @@
 import itertools
-from typing import Iterator, List, Optional
+from typing import Iterator, List, Optional, Dict, Tuple
 
+from frozendict import frozendict
 from annotations import Matrix, Point, HashId, PathFrom
 from constants import WALL, NODE, PATH
 from utils import neighbours, benchmark, replace_hash
@@ -9,9 +10,9 @@ from utils import neighbours, benchmark, replace_hash
 class Maze:
     def __init__(self, matrix: Matrix):
         self._maze = matrix
-        self.nodes: Nodes = Nodes()
-        self.paths: Paths = Paths()
-        self.adjacency: Adjacency = Adjacency()
+        self.nodes = Nodes()
+        self.paths = Paths()
+        self.adjacency = Adjacency()
         self.analyzed_maze = self.scan_maze()
 
     def __contains__(self, point: Point):
@@ -76,7 +77,7 @@ class Cell:
         return f'{view[self.type]}'
 
     def __repr__(self):
-        return self.__str__()
+        return str(self)
 
     def is_wall(self):
         return not self.value
@@ -138,10 +139,35 @@ class Nodes(dict):
                     maze.adjacency[link] = length
 
 
-class Adjacency(dict):
+class Adjacency:
     """ Adjacency contains link between nodes as key and length of path as value
         (node_id, node_id): length"""
-    pass
+
+    def __init__(self):
+        self.__internals = dict()  # type: Dict[Point, int]
+
+    def __getitem__(self, link):
+        return self.__internals[link]
+
+    def __setitem__(self, link, dist):
+        self.__internals[link] = dist
+
+    def __contains__(self, link):
+        return link in self.__internals
+
+    def links(self):
+        return self.__internals.keys()
+
+    def to_array(self) -> Matrix:
+        nodes_num = max(node for link in self.links() for node in link)
+        real_matrix = [[0] * nodes_num for _ in range(nodes_num)]
+        for x, y in self.links():
+            real_matrix[x][y] = self[x, y]
+            real_matrix[y][x] = self[x, y]
+        return real_matrix
+
+    def to_dict(self):
+        return frozendict(self.__internals)
 
 
 class Paths(dict):
