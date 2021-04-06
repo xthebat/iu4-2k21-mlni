@@ -1,47 +1,51 @@
 import numpy as np
-from classifiers import LinearClassifier
+from layers import Neuron, Softmax
 from dataset import Dataset
 from predictor import Predictor
+from utils import to2d
 from visualization import visualize, points
 
 
 def example1():
-    model = LinearClassifier(
+    model = Neuron(
         weights=np.array([
             [+1.0],
             [-1.0],
         ]),
-        bias=np.array([0.0, 0.0])
+        bias=np.array([0.0, 0.0]),
+        activation=Softmax()
     )
-    results = Predictor(model, tags=["red", "green"]).predict(np.array([+10.0]))
+    results = Predictor([model], tags=["red", "green"]).predict(np.array([+10.0]))
     print(results)
 
 
 def example2():
-    model = LinearClassifier(
+    model = Neuron(
         weights=np.array([
             [+1.0],
             [-1.0],
             [-2.0]
         ]),
-        bias=np.array([1.0, 2.0, 3.0])
+        bias=np.array([1.0, 2.0, 3.0]),
+        activation=Softmax()
     )
-    results = Predictor(model, tags=["red", "green", "blue"]).predict(np.array([
+    results = Predictor([model], tags=["red", "green", "blue"]).predict(np.array([
         [+10.0, -0.1, -10.0],
     ]))
     print(results)
 
 
 def example3():
-    model = LinearClassifier(
+    model = Neuron(
         weights=np.array([
             [+5.0, +5.0],
             [-1.0, +3.0],
             [-2.0, -4.0]
         ]),
-        bias=np.array([1.0, 2.0, 3.0])
+        bias=np.array([1.0, 2.0, 3.0]),
+        activation=Softmax()
     )
-    results = Predictor(model, tags=["red", "green", "blue"]).predict(np.array([
+    results = Predictor([model], tags=["red", "green", "blue"]).predict(np.array([
         [+10.0, -0.1, -10.0],
         [+10.0, -0.1, -10.0]
     ]))
@@ -51,15 +55,16 @@ def example3():
 def example5():
     inputs = points(-1, 1, 20)
 
-    model = LinearClassifier(
+    model = Neuron(
         weights=np.array([
             [+5.0, +5.0],
             [-1.0, +3.0],
             [-2.0, -4.0]
         ]),
-        bias=np.array([1.0, 2.0, 3.0])
+        bias=to2d(np.array([1.0, 2.0, 3.0])),
+        activation=Softmax()
     )
-    results = Predictor(model, tags=["red", "green", "blue"]).predict(inputs)
+    results = Predictor([model], tags=["red", "green", "blue"]).predict(inputs)
     print("Visualizing...")
     visualize(inputs, results)
 

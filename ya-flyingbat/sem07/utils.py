@@ -8,15 +8,7 @@ def softmax(x: ndarray) -> ndarray:
 
 # f*ck u np
 def to2d(x: ndarray) -> ndarray:
-    size = len(x.shape)
-    assert size <= 2
-
-    if size == 2:
-        return x
-
-    rows = x.shape[0]
-
-    return np.reshape(x, (rows, 1))
+    return np.reshape(x, (x.size, 1)) if len(x.shape) == 1 else x
 
 
 def glue(*args: ndarray, axis) -> ndarray:
