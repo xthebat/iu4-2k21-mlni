@@ -1,9 +1,11 @@
 import numpy as np
+import scipy.special
 from numpy import ndarray
 
 
 def softmax(x: ndarray) -> ndarray:
     return np.exp(x) / sum(np.exp(x))
+    # return scipy.special.softmax(x)
 
 
 # f*ck u np

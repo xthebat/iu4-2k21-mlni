@@ -15,5 +15,4 @@ def visualize(inputs, outputs):
     y = inputs[1, :]
     colors = [it.name for it in outputs]
     plt.scatter(x, y, c=colors)
-    plt.colorbar()
-    plt.show()
+    # plt.colorbar()
