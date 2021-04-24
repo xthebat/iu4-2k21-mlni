@@ -1,0 +1,104 @@
+digraph {
+	nodesep=1 penwidth=0 rankdir=LR splines=line
+	node [fixedsize=true shape=circle style=filled]
+	edge [arrowhead=none]
+	subgraph cluster_0 {
+		node [fillcolor=darkseagreen1]
+		label="input layer" rank=same
+		i00
+		i01
+	}
+	subgraph cluster_1 {
+		node [fillcolor=cadetblue1]
+		label="hidden layer" rank=same
+		h10
+		h11
+		h12
+		h13
+		h14
+	}
+	subgraph cluster_2 {
+		node [fillcolor=cadetblue1]
+		label="hidden layer" rank=same
+		h20
+		h21
+		h22
+		h23
+		h24
+	}
+	subgraph cluster_3 {
+		node [fillcolor=red1]
+		label="output layer" rank=same
+		o30
+		o31
+		o32
+		o33
+		o34
+		o35
+	}
+	i00 -> h10 [color=gray45 labeldistance=4]
+	i00 -> h11 [color=gray24 labeldistance=4]
+	i00 -> h12 [color=gray0 labeldistance=4]
+	i00 -> h13 [color=gray100 labeldistance=4]
+	i00 -> h14 [color=gray81 labeldistance=4]
+	i01 -> h10 [color=gray38 labeldistance=4]
+	i01 -> h11 [color=gray80 labeldistance=4]
+	i01 -> h12 [color=gray76 labeldistance=4]
+	i01 -> h13 [color=gray30 labeldistance=4]
+	i01 -> h14 [color=gray20 labeldistance=4]
+	h10 -> h20 [color=gray49 labeldistance=4]
+	h10 -> h21 [color=gray9 labeldistance=4]
+	h10 -> h22 [color=gray34 labeldistance=4]
+	h10 -> h23 [color=gray88 labeldistance=4]
+	h10 -> h24 [color=gray38 labeldistance=4]
+	h11 -> h20 [color=gray11 labeldistance=4]
+	h11 -> h21 [color=gray97 labeldistance=4]
+	h11 -> h22 [color=gray47 labeldistance=4]
+	h11 -> h23 [color=gray0 labeldistance=4]
+	h11 -> h24 [color=gray40 labeldistance=4]
+	h12 -> h20 [color=gray68 labeldistance=4]
+	h12 -> h21 [color=gray62 labeldistance=4]
+	h12 -> h22 [color=gray31 labeldistance=4]
+	h12 -> h23 [color=gray31 labeldistance=4]
+	h12 -> h24 [color=gray3 labeldistance=4]
+	h13 -> h20 [color=gray22 labeldistance=4]
+	h13 -> h21 [color=gray100 labeldistance=4]
+	h13 -> h22 [color=gray83 labeldistance=4]
+	h13 -> h23 [color=gray10 labeldistance=4]
+	h13 -> h24 [color=gray43 labeldistance=4]
+	h14 -> h20 [color=gray65 labeldistance=4]
+	h14 -> h21 [color=gray44 labeldistance=4]
+	h14 -> h22 [color=gray41 labeldistance=4]
+	h14 -> h23 [color=gray62 labeldistance=4]
+	h14 -> h24 [color=gray81 labeldistance=4]
+	h20 -> o30 [color=gray17 labeldistance=4]
+	h20 -> o31 [color=gray21 labeldistance=4]
+	h20 -> o32 [color=gray28 labeldistance=4]
+	h20 -> o33 [color=gray35 labeldistance=4]
+	h20 -> o34 [color=gray51 labeldistance=4]
+	h20 -> o35 [color=gray59 labeldistance=4]
+	h21 -> o30 [color=gray100 labeldistance=4]
+	h21 -> o31 [color=gray50 labeldistance=4]
+	h21 -> o32 [color=gray20 labeldistance=4]
+	h21 -> o33 [color=gray19 labeldistance=4]
+	h21 -> o34 [color=gray14 labeldistance=4]
+	h21 -> o35 [color=gray8 labeldistance=4]
+	h22 -> o30 [color=gray32 labeldistance=4]
+	h22 -> o31 [color=gray30 labeldistance=4]
+	h22 -> o32 [color=gray36 labeldistance=4]
+	h22 -> o33 [color=gray69 labeldistance=4]
+	h22 -> o34 [color=gray15 labeldistance=4]
+	h22 -> o35 [color=gray30 labeldistance=4]
+	h23 -> o30 [color=gray14 labeldistance=4]
+	h23 -> o31 [color=gray31 labeldistance=4]
+	h23 -> o32 [color=gray33 labeldistance=4]
+	h23 -> o33 [color=gray60 labeldistance=4]
+	h23 -> o34 [color=gray75 labeldistance=4]
+	h23 -> o35 [color=gray0 labeldistance=4]
+	h24 -> o30 [color=gray48 labeldistance=4]
+	h24 -> o31 [color=gray42 labeldistance=4]
+	h24 -> o32 [color=gray33 labeldistance=4]
+	h24 -> o33 [color=gray4 labeldistance=4]
+	h24 -> o34 [color=gray36 labeldistance=4]
+	h24 -> o35 [color=gray49 labeldistance=4]
+}
