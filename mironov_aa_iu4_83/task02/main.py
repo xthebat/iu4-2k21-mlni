@@ -1,9 +1,8 @@
-from typing import List, Optional
+from typing import Optional
 
 import numpy as np
 from matplotlib import pyplot as plt
 
-from numpy import ndarray
 from activation import Sigmoid, Softmax
 from config import filename, visualize_only_at_the_end, learning_rate, batch_size, epochs, randomize_data
 from dataset import PictureDataset, Dataset
@@ -40,9 +39,9 @@ def memoize_on_learn(
         stats.print(predicted, expected)
 
         if not visualize_only_at_the_end:
-            nn_visualizer.draw()
             loss_plotter.plot()
             class_plotter.draw()
+            nn_visualizer.draw()
             plt.pause(0.001)
 
         return predicted
@@ -64,8 +63,6 @@ def main():
     predictor = Predictor(model, dataset.tags())
 
     figure = plt.figure()
-
-    # plt.ion()
 
     stats = Statistics(dataset.tags())
     nn_visualizer = NeuralNetworkVisualizer(model, figure.add_subplot(1, 3, 1))
@@ -91,8 +88,11 @@ def main():
             np.save(f"w&b/{index}_weights.npy", layer.weights)
             np.save(f"w&b/{index}_bias.npy", layer.bias)
 
-    on_learn(-1, None)
-    # plt.show()
+        on_learn(-1, None)
+
+        class_plotter.draw()
+        loss_plotter.plot()
+        nn_visualizer.draw()
 
 
 if __name__ == '__main__':

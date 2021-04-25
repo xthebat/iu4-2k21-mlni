@@ -11,6 +11,5 @@ randomize_data = True
 
 # context parameters (If you change filename - set load_previous_session = False !!!)
 load_previous_session = True
-# filename = 'smile'
-filename = '2'
-visualize_only_at_the_end = False
+filename = 'smile'
+visualize_only_at_the_end = True

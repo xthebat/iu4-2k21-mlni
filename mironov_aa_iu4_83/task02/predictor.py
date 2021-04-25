@@ -3,7 +3,7 @@ from typing import List
 import numpy as np
 from numpy import ndarray
 
-from annotations import Out, Tagged
+from annotations import Tagged
 from layers import Layer
 from utils import to2d
 

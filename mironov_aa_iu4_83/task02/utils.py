@@ -1,6 +1,7 @@
 import numpy as np
 from numpy import ndarray
 import webcolors
+import os
 
 from annotations import W_B
 from config import neurons_in_hidden_layer, num_of_hidden_layers

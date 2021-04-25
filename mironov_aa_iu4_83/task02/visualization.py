@@ -1,11 +1,10 @@
-from typing import List, Optional
+from typing import List
 
-import numpy as np
 import graphviz
+import matplotlib.pyplot as plt
+import numpy as np
 
 from layers import Layer
-import matplotlib.pyplot as plt
-
 from predictor import Predictor
 
 
