@@ -1,0 +1,7 @@
+numpy~=1.19.4
+scipy~=1.5.4
+scikit-image~=0.18.1
+opencv-python~=4.5.1.48
+keras~=2.4.3
+keras-vis~=0.4.1
+tensorflow~=2.4.1
