@@ -23,6 +23,8 @@ def memoize_on_learn(
         class_plotter: ClassSeparationPlotter
 ):
 
+    inputs, expected_matrix = dataset.batch(None)  # get whole dataset
+
     def on_learn(index: int, loss: Optional[float]):
         if index != -1:
             if index % 5000 != 0:
@@ -32,11 +34,9 @@ def memoize_on_learn(
 
             print(f"================ epoch={index} loss={loss} ================")
 
-        inputs, expected = dataset.batch(None)  # get whole dataset
-
         predicted, _ = predictor.predict(inputs)
 
-        expected = np.argmax(expected, axis=0)  # convert to flat view
+        expected = np.argmax(expected_matrix, axis=0)  # convert to flat view
         stats.print(predicted, expected)
 
         if not visualize_only_at_the_end:
