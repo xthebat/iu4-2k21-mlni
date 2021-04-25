@@ -1,4 +1,5 @@
 import random
+from typing import Optional, List, Tuple, Iterable
 
 import imageio
 import numpy as np
@@ -11,10 +12,10 @@ from utils import get_color_name
 
 class Dataset(object):
 
-    def tags(self):
+    def tags(self) -> List[Tagged]:
         raise NotImplementedError
 
-    def batch(self, size) -> (ndarray, ndarray):
+    def batch(self, size: Optional[int] = None) -> (ndarray, ndarray):
         raise NotImplementedError
 
 
@@ -23,45 +24,38 @@ class PictureDataset(Dataset):
     def __init__(self, path: str):
         self.image = imageio.imread(path)
         data = dict()
-        self.tag_for_coordinate = {}
         for row, col in rangend(self.image.shape[0], self.image.shape[1]):
             pixel = tuple(self.image[row][col])
             values = data.setdefault(pixel, list())
             coordinate = (row / self.image.shape[0], col / self.image.shape[1])
             values.append(np.array(coordinate))
-            self.tag_for_coordinate[coordinate] = get_color_name(pixel)
 
-        self.data = [Tagged(k, np.array(v), get_color_name(k)) for k, v in data.items()]
+        self.data = [Tagged(index, rgb, np.array(values), get_color_name(rgb))
+                     for index, (rgb, values) in enumerate(data.items())]
 
         print(f"Picture {path} loaded in dataset with total {len(self.tags())} classes")
         for tagged in self.data:
-            print(f"Total data for {tagged.color_name} class: {len(tagged.values)}")
+            print(f"Total data for {tagged.color} class: {len(tagged.values)}")
 
-    def tags(self):
-        return [tagged.tag for tagged in self.data]
+    def tags(self) -> List[Tagged]:
+        return self.data
 
-    def __batch_for_tag(self, tag_index, tagged, samples):
+    def __batch_for_tag(self, tagged: Tagged, samples: Optional[int] = None):
         total_x = len(tagged.values)
+        samples = samples or total_x
         indexes = random.sample(range(total_x), samples)
         x_data = np.array([tagged.values[index, :] for index in indexes])
 
         y_data = np.zeros(shape=(samples, len(self.tags())))
-        y_data[:, tag_index] = 1
+        y_data[:, tagged.index] = 1
 
         return x_data, y_data
 
-    def batch(self, size: int) -> (ndarray, ndarray):
-        if size < len(self.tags()):
-            index = random.randint(0, len(self.tags()) - 1)
-            tagged = self.data[index]
-            x_data, y_data = self.__batch_for_tag(index, tagged, size)
-            return x_data.T, y_data.T
-
+    def __batch(self, sizes: Iterable[Tuple[Tagged, int]]) -> (ndarray, ndarray):
         x_batch = []
         y_batch = []
-        samples = int(size / len(self.tags()))
-        for tag_index, tagged in enumerate(self.data):
-            x_data, y_data = self.__batch_for_tag(tag_index, tagged, samples)
+        for tagged, samples in sizes:
+            x_data, y_data = self.__batch_for_tag(tagged, samples)
             x_batch.append(x_data)
             y_batch.append(y_data)
 
@@ -69,3 +63,17 @@ class PictureDataset(Dataset):
         y_batch = np.concatenate(y_batch)
 
         return x_batch.T, y_batch.T
+
+    def batch(self, size: Optional[int] = None) -> (ndarray, ndarray):
+        if size is None:
+            return self.__batch((tagged, len(tagged.values)) for tagged in self.data)
+
+        elif size < len(self.tags()):
+            tagged = random.choice(self.data)
+            x_data, y_data = self.__batch_for_tag(tagged, size)
+            return x_data.T, y_data.T
+
+        else:
+            samples = int(size / len(self.tags()))
+            return self.__batch((tagged, samples) for tagged in self.data)
+

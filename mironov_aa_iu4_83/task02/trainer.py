@@ -1,25 +1,28 @@
-from collections import namedtuple
-from typing import List, Optional
+from typing import List, Optional, Callable
 
 import numpy as np
 from numpy import ndarray
 
 from dataset import Dataset
 from layers import Layer
-from activation import Softmax
-from config import visualize_only_in_the_end, epochs, batch_size
 from utils import to2d
 
 
 class Trainer(object):
 
-    def __init__(self, layers: List[Layer]):
+    def __init__(
+            self,
+            layers: List[Layer],
+            batch_size: int,
+            learning_rate: float,
+            epochs: int,
+            randomize_data: bool
+    ):
         self.layers = layers
         self.batch_size = batch_size
-        self.softmax = Softmax()
-        self.loss = []
-        self.recall = []
-        self.precision = []
+        self.learning_rate = learning_rate
+        self.epochs = epochs
+        self.randomize_data = randomize_data
 
     def grads(self, x: ndarray, y: ndarray):
         z_s = []
@@ -29,7 +32,7 @@ class Trainer(object):
             z_s.append(z)
             a_s.append(a)
 
-        deltas: List[Optional[ndarray]] = [None] * len(self.layers)
+        deltas = [None] * len(self.layers)  # type: List[Optional[ndarray]]
 
         derivative = self.layers[-1].activation.backward(z_s[-1])
         deltas[-1] = (a_s[-1] - y) * derivative
@@ -45,19 +48,20 @@ class Trainer(object):
 
         return loss, dw, db
 
-    def epoch(self, index: int, x_batch: ndarray, y_batch: ndarray, lr: float, on_learn):
+    def epoch(self, index: int, x_batch: ndarray, y_batch: ndarray, on_learn: Callable):
         loss, d_weights, d_biases = self.grads(x_batch, y_batch)
         for layer, dw, db in zip(self.layers, d_weights, d_biases):
-            layer.weights -= lr * dw
-            layer.bias -= lr * to2d(db)
-        if index % (epochs // 500) == 0:
-            loss = loss * 100
-            print("================ epoch={:5} loss={:3.2f}% ================".format(index, loss))
-        if index % (epochs // 50) == 0:
-            on_learn()
-            self.loss.append(loss)
+            layer.weights -= self.learning_rate * dw
+            layer.bias -= self.learning_rate * to2d(db)
+            # print(layer.weights)
+            # print(layer.bias)
+            # print(f"epoch={index} layer={layer} dw={dw.mean()} db={db.mean()} loss={loss}")
+        on_learn(index, loss)
 
-    def train(self, dataset: Dataset, lr: float, on_learn):
-        for epoch in range(epochs):
-            x_batch, y_batch = dataset.batch(self.batch_size)
-            self.epoch(epoch, x_batch, y_batch, lr, on_learn)
+    def train(self, dataset: Dataset, on_learn):
+        x_batch, y_batch = dataset.batch(self.batch_size)
+        for epoch in range(self.epochs):
+            self.epoch(epoch, x_batch, y_batch, on_learn)
+            if self.randomize_data:
+                x_batch, y_batch = dataset.batch(self.batch_size)
+

@@ -1,58 +1,62 @@
-from typing import List
+from typing import List, Optional
 
 import numpy as np
-from matplotlib import pyplot as plt
 import graphviz
 
 from layers import Layer
-from stats import Statistics
+import matplotlib.pyplot as plt
+
+from predictor import Predictor
 
 
-class Visualize:
-    def __init__(self):
-        pass
+class LossPlotter:
 
-    @staticmethod
-    def picture(inputs, outputs):
-        plt.ion()
-        fig = plt.figure()
-        ax = fig.add_subplot(111)
-        x = inputs[0, :]
-        y = inputs[1, :]
-        colors = [it.name for it in outputs.values()]
+    def __init__(self, axes):
+        self.losses = list()
+        self.axes = axes
 
-        ax.clear()
-        ax.set_aspect('equal', 'box')
-        plt.scatter(y, list(reversed(x)), c=colors)
-        plt.pause(0.00001)
+    def append(self, loss):
+        self.losses.append(loss)
 
-    def graphics(self, stats: Statistics, loss):
-        self.parameter('Accuracy', stats.accuracy)
-        self.parameter('Recall', stats.recall)
-        self.parameter('Precision', stats.precision)
-        self.parameter('F1 Score', stats.f1_score)
-        self.loss(loss)
+    def plot(self):
+        self.axes.clear()
+        # self.axes.set_aspect('equal', 'box')
+        self.axes.plot(self.losses, "--o")
 
-    @staticmethod
-    def loss(loss):
-        plt.axis([0, 50, 0, 100])
-        plt.title('Pseudo loss')
-        plt.plot(loss)
-        plt.show()
 
-    @staticmethod
-    def parameter(title, parameter):
-        fig = plt.figure()
-        ax = fig.add_subplot(111)
-        if 'white' in parameter:
-            ax.set_facecolor('gray')
-        plt.title(title)
-        for color in parameter:
-            plt.plot(parameter[color], c=color)
-        plt.show()
+def points(start, end, n):
+    inputs = []
+    for x in np.linspace(start, end, n):
+        for y in np.linspace(start, end, n):
+            inputs.append((x, y))
+    return np.array(inputs).transpose()
 
-    @staticmethod
-    def net(model: List[Layer]):
+
+class ClassSeparationPlotter:
+
+    def __init__(self, axes, tags: List, predictor: Predictor):
+        self.axes = axes
+        self.tags = tags
+        self.predictor = predictor
+        self.inputs = points(0, 1.0, 30)
+
+    def draw(self):
+        outputs, _ = self.predictor.predict(self.inputs)
+        x = list(reversed(self.inputs[0, :]))
+        y = self.inputs[1, :]
+        colors = [np.array(self.tags[index].tag) / 256 for index in outputs]
+        self.axes.clear()
+        self.axes.set_aspect('equal', 'box')
+        self.axes.scatter(y, x, c=colors)
+
+
+class NeuralNetworkVisualizer:
+
+    def __init__(self, model: List[Layer], axes):
+        self.model = model
+        self.axes = axes
+
+    def draw(self):
         d = graphviz.Digraph()
 
         def calc_color(i, j, weights):
@@ -71,7 +75,7 @@ class Visualize:
 
         _layers = []
 
-        for i, layer in enumerate(model):
+        for i, layer in enumerate(self.model):
             internal_layer = []
             with d.subgraph(name=f'cluster_{i}') as a:
                 if i == 0:
@@ -89,17 +93,23 @@ class Visualize:
 
             _layers.append(internal_layer)
 
-        with d.subgraph(name=f'cluster_{len(model)}') as b:
+        with d.subgraph(name=f'cluster_{len(self.model)}') as b:
             internal_layer = []
             node_name = 'o'
             b.attr(label='output layer', rank='same')
             b.node_attr.update(fillcolor='red1')
-            for j in range(len(model[-1].weights)):
-                internal_layer.append(f'{node_name}{len(model)}{j}')
-                b.node(f'{node_name}{len(model)}{j}')
+            for j in range(len(self.model[-1].weights)):
+                internal_layer.append(f'{node_name}{len(self.model)}{j}')
+                b.node(f'{node_name}{len(self.model)}{j}')
             _layers.append(internal_layer)
 
         for i in range(len(_layers) - 1):
-            link_edges(d, _layers[i], _layers[i + 1], model[i].weights)
+            link_edges(d, _layers[i], _layers[i + 1], self.model[i].weights)
 
-        d.render(filename='net.gv', directory="graph", view=True)
+        d.render(filename='net', directory="graph", format="png", view=False)
+        picture = plt.imread('graph/net.png')
+        self.axes.clear()
+        self.axes.imshow(picture)
+        self.axes.set_aspect('equal', 'box')
+        self.axes.axis('off')
+

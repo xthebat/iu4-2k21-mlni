@@ -1,58 +1,44 @@
-from typing import Dict, Tuple
+import contextlib
+from typing import List
 
-from annotations import Out
-from dataset import PictureDataset
+import numpy as np
+import pandas
+from numpy import ndarray
+
+from annotations import Tagged
+
+
+@contextlib.contextmanager
+def printoptions(*args, **kwargs):
+    original = np.get_printoptions()
+    np.set_printoptions(*args, **kwargs)
+    try:
+        yield
+    finally:
+        np.set_printoptions(**original)
 
 
 class Statistics:
-    def __init__(self, dataset: PictureDataset):
-        self.colors = [data.color_name for data in dataset.data]
-        self.real = dataset.tag_for_coordinate
-        self.recall = {}
-        self.precision = {}
-        self.accuracy = {}
-        self.f1_score = {}
-        for color in self.colors:
-            self.recall.setdefault(color, list())
-            self.precision.setdefault(color, list())
-            self.f1_score.setdefault(color, list())
-            self.accuracy.setdefault(color, list())
+    def __init__(self, tags: List[Tagged]):
+        self.colors = [tag.color for tag in tags]
 
-    def calc_parameters(self, predicted: Dict[Tuple[float, float], Out]):
-        for color in self.colors:
-            TP = 0
-            FN = 0
-            FP = 0
-            TN = 0
-            for coord, out in predicted.items():
-                actual = self.real[coord]
-                pred = out.name
+    def print(self, predicted: ndarray, expected: ndarray):
+        total_tags = len(self.colors)
+        confusion_matrix, _, _ = np.histogram2d(expected, predicted, bins=np.arange(total_tags + 1))
 
-                if pred == color and actual == color:
-                    TP += 1
-                elif pred == color and actual != color:
-                    FP += 1
-                elif actual == color and pred != color:
-                    FN += 1
-                else:
-                    TN += 1
+        tp = confusion_matrix.diagonal()
+        fp_tp = np.sum(confusion_matrix, axis=1)
+        fn_tp = np.sum(confusion_matrix, axis=0)
+        recall = tp / fp_tp
+        precision = tp / fn_tp
+        f1_score = 2 * ((precision * recall) / (precision + recall))
 
-            try:
-                recall = TP / (TP + FN)
-            except ZeroDivisionError:
-                recall = 0
-            try:
-                precision = TP / (TP + FP)
-            except ZeroDivisionError:
-                precision = 0
-            accuracy = (TP + TN) / (TP + TN + FN + FP)
+        print(pandas.DataFrame(confusion_matrix, dtype=int, columns=self.colors, index=self.colors))
 
-            try:
-                f1_score = 2*((precision * recall) / (precision + recall))
-            except ZeroDivisionError:
-                f1_score = 0
+        accuracy = np.sum(expected == predicted) / len(expected)
+        print(f"accuracy: {accuracy}, metric:")
 
-            self.recall[color].append(recall)
-            self.precision[color].append(precision)
-            self.f1_score[color].append(f1_score)
-            self.accuracy[color].append(accuracy)
+        with printoptions(formatter={'float': '{: 0.2f}'.format}):
+            print(f"recall    = {recall}")
+            print(f"precision = {precision}")
+            print(f"f1_score  = {f1_score}")
